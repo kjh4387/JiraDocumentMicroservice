@@ -1,0 +1,31 @@
+# .devcontainer/docker-compose.dev.yml
+
+version: "3.8"
+
+services:
+  main-service:
+    environment:
+      - ENV=development
+    volumes:
+      - ../main-service:/app
+      - ../generated_files:/app/generated_files
+    ports:
+      - "8000:8000"
+
+  doc-gen-service:
+    environment:
+      - ENV=development
+    volumes:
+      - ../doc-gen-service:/app
+      - ../generated_files:/app/generated_files
+    ports:
+      - "8001:8001"
+
+  post-service:
+    environment:
+      - ENV=development
+    volumes:
+      - ../post-service:/app
+      - ../generated_files:/app/generated_files
+    ports:
+      - "8002:8002"

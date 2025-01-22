@@ -1,8 +1,46 @@
-version: '3.4'
+# docker-compose.yml
+
+version: "3.8"
 
 services:
-  jiradocumentmicroservice:
-    image: jiradocumentmicroservice
+  main-service:
     build:
-      context: .
-      dockerfile: ./Dockerfile
+      context: ./main-service
+      dockerfile: Dockerfile
+    container_name: main-service
+    volumes:
+      - ./main-service:/app
+      - ./generated_files:/app/generated_files
+    ports:
+      - "8000:8000"
+    environment:
+      - ENV=development
+    depends_on:
+      - doc-gen-service
+      - post-service
+
+  doc-gen-service:
+    build:
+      context: ./doc-gen-service
+      dockerfile: Dockerfile
+    container_name: doc-gen-service
+    volumes:
+      - ./doc-gen-service:/app
+      - ./generated_files:/app/generated_files
+    ports:
+      - "8001:8001"
+    environment:
+      - ENV=development
+
+  post-service:
+    build:
+      context: ./post-service
+      dockerfile: Dockerfile
+    container_name: post-service
+    volumes:
+      - ./post-service:/app
+      - ./generated_files:/app/generated_files
+    ports:
+      - "8002:8002"
+    environment:
+      - ENV=development
