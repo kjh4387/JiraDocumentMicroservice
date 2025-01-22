@@ -1,7 +1,6 @@
 {
     "name": "meteor Python Microservices Dev Container",
-    // 개발 시 사용할 docker-compose 파일
-    "dockerComposeFile":[ "../docker-compose.yml"],
+    
     // Devcontainer 기준이 될 서비스 (main-service)
     "service": "main-service",
     "workspaceFolder": "/app",
@@ -28,5 +27,6 @@
     },
     
     "postCreateCommand": "pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt",
+    "remoteUser": "root",
     "forwardPorts": [8000, 8001, 8002]
 }
