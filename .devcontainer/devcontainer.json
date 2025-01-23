@@ -1,32 +1,33 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/anaconda
 {
-    "name": "meteor Python Microservices Dev Container",
-    // 개발 시 사용할 docker-compose 파일
-    "dockerComposeFile":[ "../docker-compose.yml"],
-    // Devcontainer 기준이 될 서비스 (main-service)
-    "service": "main-service",
-    "workspaceFolder": "/app",
-    // 여러 서비스를 동시에 띄우려면 아래처럼 runServices
-    "runServices": [
-        "main-service",
-        "doc-gen-service",
-        "post-service"
-    ],
-    
-    "customizations": {
-        "vscode": {
-            "settings": {
-                "terminal.integrated.defaultProfile.linux": "/bin/sh",
-                "python.pythonPath": "/usr/local/bin/python"
-            },
-            "extensions": [
-                "ms-python.python",
-                "ms-python.vscode-pylance",
-                "ms-azuretools.vscode-docker",
-                "ms-vscode-remote.remote-containers"
-            ]
-        }
-    },
-    
-    "postCreateCommand": "pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt",
-    "forwardPorts": [8000, 8001, 8002]
+	"name": "Meteor-Dev-Container",
+	"dockerComposeFile": "../docker-compose.yml",
+	
+	"service": "dev",
+	"workspaceFolder": "/workspace",
+
+	//devcontainer 중지 시 docker-compose service 중지
+	"shutdownAction": "stopCompose",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-vscode.vscode-typescript-tslint-plugin",
+				"esbenp.prettier-vscode"
+			],
+			"settings": {
+				"terminal.integrated.defaultProfile.linux": "/bin/bash"
+			}
+		}
+	}
 }
+// Features to add to the dev container. More info: https://containers.dev/features.
+// "features": {},
+// Use 'forwardPorts' to make a list of ports inside the container available locally.
+// "forwardPorts": [],
+// Use 'postCreateCommand' to run commands after the container is created.
+// "postCreateCommand": "python --version",
+// Configure tool-specific properties.
+// "customizations": {},
+// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+// "remoteUser": "root"

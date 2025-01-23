@@ -1,5 +1,0 @@
-fastapi==0.95.2
-uvicorn==0.22.0
-requests==2.31.0
-Office365-REST-Python-Client==2.3.11
-python-dotenv==1.0.0

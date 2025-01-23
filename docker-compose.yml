@@ -1,47 +1,62 @@
 version: "3.8"
 
 services:
-  main-service:
+  #devcontainer용 컨테이너
+  dev:
     build:
-      context: ./main-service
-      dockerfile: Dockerfile
-    container_name: main-service
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    container_name: dev-container
     volumes:
-      - ./main-service:/app
-      - ./generated_files:/app/generated_files
+      - .:/workspace
+    environment:
+      - ENV:development
+    depends_on:
+      - service-entry
+    command: sleep infinity
+
+  #서비스별 컨테이너
+  #service orchestration을 위한 service-entry 컨테이너
+  service-entry:
+    build:
+      context: ./services/service-entry
+      dockerfile: Dockerfile
+    container_name: service-entry
+    volumes:
+      - ./services/service-entry/source:/app/source/service-entry
     ports:
       - "8000:8000"
     environment:
-      - ENV=development
+      - ENV:development
     depends_on:
-      - doc-gen-service
-      - post-service
-    restart: unless-stopped
+      - document-generation-service
+      - sharepoint-service
+    command: sleep infinity
 
-  doc-gen-service:
+  #template service
+  document-generation-service:
     build:
-      context: ./doc-gen-service
+      context: ./services/document-generation-service
       dockerfile: Dockerfile
-    container_name: doc-gen-service
+    container_name: document-generation-service
     volumes:
-      - ./doc-gen-service:/app
-      - ./generated_files:/app/generated_files
+       - ./services/document-generation-service/source:/app/source/document-generation-service
     ports:
       - "8001:8001"
     environment:
-      - ENV=development
-    restart: unless-stopped
+      - ENV:development
+    command: sleep infinity
 
-  post-service:
+  #sharepoint에 파일 저장 요청을 구성하기 위한 서비스
+  sharepoint-service:
     build:
-      context: ./post-service
+      context: ./services/sharepoint-service
       dockerfile: Dockerfile
-    container_name: post-service
+    container_name: sharepoint-service
     volumes:
-      - ./post-service:/app
-      - ./generated_files:/app/generated_files
+       - ./services/sharepoint-service/source:/app/source/sharepoint-service
     ports:
       - "8002:8002"
     environment:
-      - ENV=development
-    restart: unless-stopped
+      - ENV:development
+    command: sleep infinity
