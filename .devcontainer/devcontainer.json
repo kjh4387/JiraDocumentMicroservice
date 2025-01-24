@@ -12,8 +12,8 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"ms-vscode.vscode-typescript-tslint-plugin",
-				"esbenp.prettier-vscode"
+				"esbenp.prettier-vscode",
+				"ms-azuretools.vscode-docker"
 			],
 			"settings": {
 				"terminal.integrated.defaultProfile.linux": "/bin/bash"
