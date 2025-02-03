@@ -23,7 +23,7 @@ services:
       dockerfile: Dockerfile
     container_name: service-entry
     volumes:
-      - ./services/service-entry/source:/app/source/service-entry
+      - ./services/service-entry/source:/app
     ports:
       - "8000:8000"
     environment:
@@ -40,7 +40,7 @@ services:
       dockerfile: Dockerfile
     container_name: document-generation-service
     volumes:
-       - ./services/document-generation-service/source:/app/source/document-generation-service
+       - ./services/document-generation-service/source:/app
     ports:
       - "8001:8001"
     environment:
@@ -54,9 +54,15 @@ services:
       dockerfile: Dockerfile
     container_name: sharepoint-service
     volumes:
-       - ./services/sharepoint-service/source:/app/source/sharepoint-service
+       - ./services/sharepoint-service/source:/app
     ports:
       - "8002:8002"
     environment:
-      - ENV:development
+      - ENV=development
+      - SHAREPOINT_SITE=https://yourcompany.sharepoint.com/sites/yourSite
+      - SHAREPOINT_USER=yourusername@yourcompany.com
+      - SHAREPOINT_PW=yourpassword
+      - SHAREPOINT_FOLDER=Shared Documents/YourFolder
     command: sleep infinity
+
+  
