@@ -12,57 +12,38 @@ services:
     environment:
       - ENV:development
     depends_on:
-      - service-entry
+      - app
     command: sleep infinity
 
-  #서비스별 컨테이너
-  #service orchestration을 위한 service-entry 컨테이너
-  service-entry:
-    build:
-      context: ./services/service-entry
-      dockerfile: Dockerfile
-    container_name: service-entry
+
+  db:
+    image: postgres:14
+    container_name: my-postgres
+    environment:
+      - POSTGRES_USER=mdocumentautomationtest
+      - POSTGRES_PASSWORD=generalpassword
+      - POSTGRES_DB=mydb
     volumes:
-      - ./services/service-entry/source:/app
+      - ./dbdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+  
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: my-app
+    depends_on:
+      - db
+    environment:
+      # DB 접속 정보: Python 코드에서 os.getenv("DB_HOST") 등으로 가져갈 수 있음
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=mydb
+      - DB_USER=documentautomationtest
+      - DB_PASSWORD=generalpassword
     ports:
       - "8000:8000"
-    environment:
-      - ENV:development
-    depends_on:
-      - document-generation-service
-      - sharepoint-service
-    command: sleep infinity
-
-  #template service
-  document-generation-service:
-    build:
-      context: ./services/document-generation-service
-      dockerfile: Dockerfile
-    container_name: document-generation-service
     volumes:
-       - ./services/document-generation-service/source:/app
-    ports:
-      - "8001:8001"
-    environment:
-      - ENV:development
-    command: sleep infinity
-
-  #sharepoint에 파일 저장 요청을 구성하기 위한 서비스
-  sharepoint-service:
-    build:
-      context: ./services/sharepoint-service
-      dockerfile: Dockerfile
-    container_name: sharepoint-service
-    volumes:
-       - ./services/sharepoint-service/source:/app
-    ports:
-      - "8002:8002"
-    environment:
-      - ENV=development
-      - SHAREPOINT_SITE=https://yourcompany.sharepoint.com/sites/yourSite
-      - SHAREPOINT_USER=yourusername@yourcompany.com
-      - SHAREPOINT_PW=yourpassword
-      - SHAREPOINT_FOLDER=Shared Documents/YourFolder
-    command: sleep infinity
-
+      - ./:/workspace  # 필요에 따라 코드 마운트
   

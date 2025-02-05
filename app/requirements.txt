@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+requests
+jinja2
+weasyprint
+python-dotenv
+Office365-REST-Python-Client
+psycopg2-binary
