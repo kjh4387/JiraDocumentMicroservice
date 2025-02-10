@@ -20,8 +20,8 @@ services:
     image: postgres:14
     container_name: my-postgres
     environment:
-      - POSTGRES_USER=mdocumentautomationtest
-      - POSTGRES_PASSWORD=generalpassword
+      - POSTGRES_USER=myuser
+      - POSTGRES_PASSWORD=mypassword
       - POSTGRES_DB=mydb
     volumes:
       - ./dbdata:/var/lib/postgresql/data
@@ -40,10 +40,10 @@ services:
       - DB_HOST=db
       - DB_PORT=5432
       - DB_NAME=mydb
-      - DB_USER=documentautomationtest
-      - DB_PASSWORD=generalpassword
+      - DB_USER=myuser
+      - DB_PASSWORD=mypassword
     ports:
       - "8000:8000"
     volumes:
-      - ./:/workspace  # 필요에 따라 코드 마운트
+      - ./app:/app # 필요에 따라 코드 마운트
   
