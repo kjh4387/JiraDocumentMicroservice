@@ -1,4 +1,3 @@
-# models/employee.py
 from datetime import date
 from typing import Optional
 
@@ -12,13 +11,15 @@ import logging
 
 # models/employee.py
 class Employee:
-    def __init__(self, id, name, email, phone_number, bank_account, signature_path=None,  birth=None):
+    def __init__(self, id, name, email, phone_number, bank_account, position, affiliation = "메테오 시뮬레이션",  signature_path=None,  birth=None):
         self.id = id
         self.name = name
         self.email = email
         self.phone_number = phone_number
         self.signature_path = signature_path
         self.bank_account = bank_account
+        self.position = position
+        self.affiliation = affiliation
         self.birth = birth
 
     @staticmethod
@@ -34,6 +35,8 @@ class Employee:
                 email TEXT NOT NULL UNIQUE,
                 phone_number TEXT,
                 bank_account TEXT,
+                Affiliation TEXT,
+                position TEXT,
                 signature_path TEXT,
                 birth DATE
             );
@@ -43,15 +46,15 @@ class Employee:
         conn.close()
 
     @staticmethod
-    def insert(name, email, phone_number, bank_account, signature_path=None, birth=None):
+    def insert(name, email, phone_number, bank_account, position, affiliation= "메테오시뮬레이션", signature_path=None, birth=None):
         conn = get_connection()
         cur = conn.cursor()
         try:
             cur.execute(
-                """INSERT INTO employees (name, email, phone_number, bank_account, signature_path, birth)
-                   VALUES (%s, %s, %s, %s, %s, %s)
+                """INSERT INTO employees (name, email, phone_number, bank_account, position, affiliation, signature_path, birth)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                    RETURNING id;""",
-                (name, email, phone_number, bank_account, signature_path, birth)
+                (name, email, phone_number, bank_account, position, affiliation, signature_path, birth)
             )
             new_id = cur.fetchone()[0]
             conn.commit()
@@ -67,15 +70,16 @@ class Employee:
     @staticmethod
     def from_row(row):
         """row -> Employee 객체로 변환"""
-        # row: (id, name, email, phone_number, signature_path, birth)
         return Employee(
             id=row[0],
             name=row[1],
             email=row[2],
             phone_number=row[3],
             bank_account=row[4],
-            signature_path=row[5],
-            birth=row[6]
+            position=row[5],
+            affiliation = row[6],
+            signature_path=row[7],
+            birth=row[8]
         )
 
     @staticmethod
@@ -84,7 +88,7 @@ class Employee:
         conn = get_connection()
         cur = conn.cursor()
         cur.execute(
-            "SELECT id, name, email, phone_number, bank_account, signature_path, birth FROM employees WHERE id = %s;",
+            "SELECT id, name, email, phone_number, bank_account, position, affiliation, signature_path, birth FROM employees WHERE id = %s;",
             (emp_id,)
         )
         row = cur.fetchone()
@@ -100,7 +104,7 @@ class Employee:
         conn = get_connection()
         cur = conn.cursor()
         cur.execute(
-            "SELECT id, name, email, phone_number, bank_account, signature_path, birth FROM employees WHERE email = %s;",
+            "SELECT id, name, email, phone_number, bank_account, position, affiliation, signature_path, birth FROM employees WHERE email = %s;",
             (email,)
         )
         row = cur.fetchone()
@@ -115,7 +119,7 @@ class Employee:
         """모든 Employee 조회"""
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("SELECT id, name, email, phone_number, bank_account, signature_path, birth FROM employees ORDER BY id;")
+        cur.execute("SELECT id, name, email, phone_number, bank_account, position, affiliation, signature_path, birth FROM employees ORDER BY id;")
         rows = cur.fetchall()
         cur.close()
         conn.close()
@@ -136,9 +140,7 @@ if __name__ == "__main__":
     print(sys.path)
     Employee.delete_table()
     Employee.create_table()
-    emp_id = Employee.insert("김자현", "kjh4387@msimul.com", "010-5016-4387", "국민 477002-04-107088", "sample_signature_path", date(1996, 2, 15))
-    emp_id2 = Employee.insert("황지인", "laplace@msimul.com", "010-1234-5678", "국민 477002-04-107088", "sample_signature_path", date(1997, 12, 12))
+    emp_id = Employee.insert("김자현", "kjh4387@msimul.com", "010-5016-4387", "국민 477002-04-107088", "주임연구원", "메테오 시뮬레이션", "sample_signature_path", date(1996, 2, 15))
+    emp_id2 = Employee.insert("황지인", "laplace@msimul.com", "010-1234-5678", "국민 477002-04-107088", "주임연구원", "메테오 시뮬레이션", "sample_signature_path", date(1997, 12, 12))
     print("Inserted employee ID:", emp_id, emp_id2)
-    print("All employees:")
-    for emp in Employee.get_all():
-        print(emp.id, emp.name, emp.email, emp.phone_number, emp.bank_account, emp.signature_path, emp.birth)
+    print("kjh4387@msimul.com:", Employee.get_by_email("kjh4387@msimul.com").__dict__)
