@@ -36,6 +36,32 @@ def create_employees_table():
     except Exception as e:
         print("테이블 생성 오류:", e)
 
+def delete_employee(employee_id: int):
+    """employees 테이블에서 레코드 삭제"""
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM employees WHERE id=%s;", (employee_id,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print(f"사원 id={employee_id} 삭제.")
+    except Exception as e:
+        print("데이터 삭제 오류:", e)
+
+def delete_employee_table():
+    """employees 테이블 삭제"""
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("DROP TABLE IF EXISTS employees;")
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print("employees 테이블 삭제.")
+    except Exception as e:
+        print("테이블 삭제 오류:", e)
+
 def insert_employee(name: str, signature: str):
     """employees 테이블에 레코드 삽입"""
     try:
@@ -85,3 +111,5 @@ if __name__ == "__main__":
     # 3) 조회
     data = get_all_employees()
     print("employees 목록:", data)
+
+    delete_employee_table()
