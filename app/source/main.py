@@ -5,34 +5,21 @@ import requests
 
 app = FastAPI()
 
+class template_data:
+    def __init__(self, template_name, datas):
+        self.template_name = template_name
+        self.datas = datas
+
 @app.post("/process-document")
-def process_document(data: dict = Body(...)):
+def process_document(data: template_data ):
     """
-    1) doc-gen-service에 문서 생성 요청
-    2) 생성된 문서를 post-service로 전송 요청
-    3) 최종 결과를 반환
+    전달된 딕셔너리를 바탕으로 템플릿을 사용하여 문서를 생성하고 결과를 반환합니다.
+    딕셔너리 내부의 template_name을 바탕으로 템플릿을 찾고, 찾은 템플릿 내부 placeholder를 스캔하여 내부에 들어갈 필드를 파악합니다.
+    placeholder 중 DB에 저장된 데이터가 필요한 경우, 해당 데이터를 DB에서 조회하여 딕셔너리에 추가하여 데이터를 완성합니다.
+    완성된 데이터를 기반으로 placeholder와 비교하고, 필요한 데이터가 전부 있는 경우 템플릿을 채워서 결과를 반환합니다.
+
+    :param data: template_data 클래스 인스턴스
     """
-    doc_gen_url = "http://doc-gen-service:8001/generate-pdf"
-    post_url = "http://post-service:8002/post-document"
-
-    # 1) 문서 생성 요청
-    gen_resp = requests.post(doc_gen_url, json=data)
-    if gen_resp.status_code != 200:
-        return {"error": "Failed to generate document"}
-
-    # doc-gen-service로부터 생성된 PDF 경로를 받았다고 가정
-    pdf_info = gen_resp.json()  # e.g., {"pdf_path": "/app/generated/example.pdf"}
-
-    # 2) post-service에 업로드 요청
-    post_resp = requests.post(post_url, json=pdf_info)
-    if post_resp.status_code != 200:
-        return {"error": "Failed to post document to external system"}
-
-    return {
-        "message": "Document processed successfully",
-        "doc_gen_result": pdf_info,
-        "post_result": post_resp.json()
-    }
 
 @app.get("/")
 def read_root():
