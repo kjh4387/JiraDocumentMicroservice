@@ -1,79 +1,95 @@
+import os,sys
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from repository.research_repository import ResearchRepository
 from repository.employee_repository import EmployeeRepository
-from services.template_renderer import TemplateRenderer
-from datetime import date
+from repository.company_repository import CompanyRepository
+from .template_renderer import TemplateRenderer
 from pydantic import BaseModel
+import logging
+from mappers.mapper_impl import *
+from mappers.mapper_interfaces import *
 
-# 요청 데이터에 대한 Pydantic 모델 (확장 가능)
 class DocumentRequest(BaseModel):
-    research_key: str
-    participant1_email: str
-    participant2_email: str
-    participant3_email: str
-    purpose: str
-    published_date: date  # 실제 사용 시 date 형식으로 변환할 수도 있음
+    template_name: str
+    published_date: str
+    class Config:
+        extra = 'allow'
 
 class DocumentService:
-    def __init__(self, research_repo: ResearchRepository, employee_repo: EmployeeRepository):
+    def __init__(
+        self, 
+        research_repo: ResearchRepository, 
+        research_mapper: ResearchContextMapper,
+        employee_repo: EmployeeRepository,
+        employee_mapper: ResearchContextMapper,
+        company_repo: CompanyRepository,
+        company_mapper: ResearchContextMapper,
+
+
+        template_dir: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "template"),
+        logger:logging.Logger = None
+    ):
+        """
+        Args:
+            research_repo (ResearchRepository): 연구 정보 Repository
+            research_mapper (ResearchContextMapper): 연구 정보 Mapper
+            employee_repo (EmployeeRepository): 직원 정보 Repository
+            employee_mapper (EmployeeContextMapper): 직원 정보 Mapper
+            company_repo (CompanyRepository): 회사 정보 Repository
+            company_mapper (CompanyContextMapper): 회사 정보 Mapper
+            template_dir (str): 템플릿 파일이 저장된 디렉터리 경로
+            logger (logging.Logger): Logger 인스턴스
+        
+        """
         self.research_repo = research_repo
+        self.research_mapper = research_mapper
         self.employee_repo = employee_repo
+        self.employee_mapper = employee_mapper
+        self.company_repo = company_repo
+        self.company_mapper = company_mapper
         self.template_renderer = TemplateRenderer()
+        self.logger = logger
+        self.template_dir = template_dir
+
+
+    def load_template(self, template_name: str) -> str:
+        template_path = os.path.join(self.template_dir, template_name)
+        if not os.path.exists(template_path):
+            raise FileNotFoundError(f"Template file not found: {template_path}")
+        with open(template_path, 'r', encoding='utf-8-sig') as file:
+            return file.read()
+        
 
     def create_document(self, doc_request: DocumentRequest) -> str:
-        # 1. DB 조회: Research 정보
-        research = self.research_repo.get_by_key(doc_request.research_key)
-        # 2. DB 조회: 각 참가자 정보
-        participant1 = self.employee_repo.get_by_email(doc_request.participant1_email)
-        participant2 = self.employee_repo.get_by_email(doc_request.participant2_email)
-        participant3 = self.employee_repo.get_by_email(doc_request.participant3_email)
+        doc_data = doc_request.model_dump()
 
-        # 3. 템플릿 컨텍스트 구성 (Jira 이슈에서 받은 값과 DB에서 조회한 값을 혼합)
+        # DB 조회: 연구 정보
+        research_key = doc_data.pop("research_key", None)
+        research = self.research_repo.get_by_key(research_key)
+        research_context = self.research_mapper.to_context(research)
+        
+        # DB 조회: 각 참가자 정보 (리스트 순회)
+        participants_emails = doc_data.pop("participants",[], None)
+        participants_context = []
+        for email in doc_request.participants:
+            employee = self.employee_repo.get_by_email(email)
+            participants_context.append(self.employee_mapper.to_context(employee))
+
+        
+        
+        # 템플릿 로딩
+        template_str = self.load_template(doc_request.template_name)
+
+        # 컨텍스트 구성
         context = {
-            "research": {
-                "name": research.name,
-                "start_date": research.start_date.strftime("%Y.%m.%d"),
-                "end_date": research.end_date.strftime("%Y.%m.%d")
-            },
-            "participant1": {
-                "name": participant1.name,
-                "signature": participant1.sign
-            },
-            "participant2": {
-                "name": participant2.name,
-                "signature": participant2.sign
-            },
-            "participant3": {
-                "name": participant3.name,
-                "signature": participant3.sign
-            },
-            "purpose": doc_request.purpose,         # 직접 입력받은 값
+            "research": research_context,
+            "participants": participants_context,
+            "purpose": doc_request.purpose,
             "published_date": doc_request.published_date
         }
 
-        # 4. 템플릿 선택
-        # 추후 이슈 유형별로 여러 템플릿 핸들러(Strategy 패턴)로 확장 가능함.
-        template_str = """<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="utf-8">
-  <title>서류 자동 작성</title>
-</head>
-<body>
-  <h1>{{ research.name }}</h1>
-  <p>연구 기간: {{ research.start_date }} ~ {{ research.end_date }}</p>
-  <h2>참석자</h2>
-  <ul>
-    <li>이름: {{ participant1.name }}, 서명: {{ participant1.signature }}</li>
-    <li>이름: {{ participant2.name }}, 서명: {{ participant2.signature }}</li>
-    <li>이름: {{ participant3.name }}, 서명: {{ participant3.signature }}</li>
-  </ul>
-  <p>출장 목적: {{ purpose }}</p>
-  <p>문서 작성일: {{ published_date }}</p>
-</body>
-</html>
-"""
-
-        # 5. 템플릿 렌더링
         rendered_document = self.template_renderer.render(template_str, context)
-        # (추후 document_log 테이블에 기록하는 기능 추가 가능)
         return rendered_document
+    
+
+

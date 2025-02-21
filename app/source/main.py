@@ -2,6 +2,9 @@
 
 from fastapi import FastAPI, Body
 import requests
+import logger_settings
+
+
 
 app = FastAPI()
 
@@ -118,3 +121,5 @@ def get_customers():
         return {"customers": customers}
     except Exception as e:
         return {"error": str(e)}
+
+
