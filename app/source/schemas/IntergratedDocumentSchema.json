@@ -1,0 +1,502 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/IntegratedDocumentSchema.json",
+  "title": "서류 통합 스키마",
+  "type": "object",
+
+  "properties": {
+    "document_type": {
+      "type": "string",
+      "description": "문서 유형",
+      "enum": [
+        "견적서",
+        "거래명세서",
+        "출장신청서",
+        "출장정산신청서",
+        "회의비사용신청서",
+        "회의록",
+        "구매의뢰서",
+        "전문가활용계획서",
+        "전문가자문확인서",
+        "지출결의서"
+      ]
+    }
+  },
+  "required": ["document_type"],
+
+  "allOf": [
+    {
+      "if": { "properties": { "document_type": { "const": "견적서" } } },
+      "then": { "$ref": "#/definitions/EstimateDoc" }
+    },
+    {
+      "if": { "properties": { "document_type": { "const": "거래명세서" } } },
+      "then": { "$ref": "#/definitions/TradingStatementDoc" }
+    },
+    {
+      "if": { "properties": { "document_type": { "const": "출장신청서" } } },
+      "then": { "$ref": "#/definitions/TravelApplicationDoc" }
+    },
+    {
+      "if": { "properties": { "document_type": { "const": "출장정산신청서" } } },
+      "then": { "$ref": "#/definitions/TravelExpenseDoc" }
+    },
+    {
+      "if": { "properties": { "document_type": { "const": "회의비사용신청서" } } },
+      "then": { "$ref": "#/definitions/MeetingExpenseDoc" }
+    },
+    {
+      "if": { "properties": { "document_type": { "const": "회의록" } } },
+      "then": { "$ref": "#/definitions/MeetingMinutesDoc" }
+    },
+    {
+      "if": { "properties": { "document_type": { "const": "구매의뢰서" } } },
+      "then": { "$ref": "#/definitions/PurchaseOrderDoc" }
+    },
+    {
+      "if": { "properties": { "document_type": { "const": "전문가활용계획서" } } },
+      "then": { "$ref": "#/definitions/ExpertUtilPlanDoc" }
+    },
+    {
+      "if": { "properties": { "document_type": { "const": "전문가자문확인서" } } },
+      "then": { "$ref": "#/definitions/ExpertConsultConfirmDoc" }
+    },
+    {
+      "if": { "properties": { "document_type": { "const": "지출결의서" } } },
+      "then": { "$ref": "#/definitions/ExpenditureDoc" }
+    }
+  ],
+
+  "$defs": {
+
+    "Metadata": {
+      "type": "object",
+      "properties": {
+        "document_number": { "type": "string", "description": "문서번호" },
+        "date_issued": { "type": "string", "format": "date", "description": "발급/작성/거래일자" },
+        "receiver": { "type": "string", "description": "수신인" },
+        "reference": { "type": "string", "description": "참조" }
+      }
+    },
+
+    "SupplierInfo": {
+      "type": "object",
+      "properties": {
+        "biz_id": { "type": "string", "description": "사업자등록번호" },
+        "company_name": { "type": "string", "description": "상호" },
+        "rep_name": { "type": "string", "description": "대표자 성명" },
+        "rep_stamp": { "type": "string", "description": "대표자 직인" },
+        "address": { "type": "string", "description": "소재지" },
+        "biz_type": { "type": "string", "description": "업태" },
+        "biz_item": { "type": "string", "description": "종목" },
+        "phone": { "type": "string", "description": "전화번호" }
+      }
+    },
+
+    "Item": {
+      "type": "object",
+      "properties": {
+        "item_no": { "type": "string", "description": "번호" },
+        "name": { "type": "string", "description": "품명/품목" },
+        "spec": { "type": "string", "description": "규격" },
+        "quantity": { "type": "number", "description": "수량" },
+        "unit_price": { "type": "number", "description": "단가" },
+        "amount": { "type": "number", "description": "공급가액" },
+        "vat": { "type": "number", "description": "세액" },
+        "total": { "type": "number", "description": "합계(옵션)" },
+        "memo": { "type": "string", "description": "비고(옵션)" }
+      }
+    },
+    "ItemList": {
+      "type": "array",
+      "description": "견적/거래명세/품목 내역 등 반복 항목",
+      "items": { "$ref": "#/definitions/Item" }
+    },
+
+    "AmountSummary": {
+      "type": "object",
+      "properties": {
+        "supply_sum": { "type": "number", "description": "공급가액 합계" },
+        "vat_sum": { "type": "number", "description": "세액 합계" },
+        "grand_total": { "type": "number", "description": "총액 합계" },
+        "total_in_korean": {
+          "type": "string",
+          "description": "금액 한글 표기 (예: 구백만 원정 등)"
+        }
+      }
+    },
+
+    "ResearchProjectInfo": {
+      "type": "object",
+      "properties": {
+        "project_name": { "type": "string", "description": "연구 과제명" },
+        "project_period": { "type": "string", "description": "연구 기간" },
+        "project_number": { "type": "string", "description": "과제번호" },
+        "project_manager": { "type": "string", "description": "과제책임자" },
+        "project_manager_phone": { "type": "string", "description": "과제책임자 전화번호" }
+
+      }
+    },
+
+    "ApplicantInfo": {
+      "type": "object",
+      "properties": {
+        "department": { "type": "string", "description": "소속" },
+        "applicant_name": { "type": "string", "description": "성명" },
+        "position": { "type": "string", "description": "직위" },
+        "stamp": { "type": "string", "description": "직인 or 서명" },
+        "apply_date": { "type": "string", "format": "date", "description": "신청/작성일자" }
+      }
+    },
+
+    "TravelInfo": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "성명" },
+        "purpose": { "type": "string", "description": "출장목적" },
+        "duration": { "type": "string", "description": "출장기간" },
+        "destination": { "type": "string", "description": "출장 목적지" },
+        "signature": { "type": "string", "description": "서명" }
+      }
+    },
+
+    "MeetingInfo": {
+      "type": "object",
+      "properties": {
+        "meeting_purpose": { "type": "string", "description": "회의 목적" },
+        "meeting_date": { "type": "string", "description": "회의 일시" },
+        "location": { "type": "string", "description": "장소" },
+        "amount": { "type": "number", "description": "회의비 금액" },
+        "topic": { "type": "string", "description": "주제/내용(회의록 시)" }
+      }
+    },
+
+    "Participant": {
+      "type": "object",
+      "properties": {
+        "department": { "type": "string", "description": "소속" },
+        "position": { "type": "string", "description": "직위" },
+        "name": { "type": "string", "description": "성명" },
+        "signature": { "type": "string", "description": "서명" }
+      }
+    },
+
+    "ExpertInfo": {
+      "type": "object",
+      "properties": {
+        "affiliation": { "type": "string", "description": "소속" },
+        "position": { "type": "string", "description": "직위" },
+        "name": { "type": "string", "description": "성명" },
+        "dob": { "type": "string", "description": "생년월일" },
+        "address": { "type": "string", "description": "주소" },
+        "classification": { "type": "string", "description": "전문가 소속 구분 (내부/외부)" }
+      }
+    },
+
+    "UtilizationPlan": {
+      "type": "object",
+      "properties": {
+        "purpose": { "type": "string", "description": "활용 내용(목적)" },
+        "date": { "type": "string", "description": "일시" },
+        "location": { "type": "string", "description": "장소" },
+        "target": { "type": "string", "description": "활용 대상" },
+        "estimated_cost": { "type": "number", "description": "예상 소요 비용" }
+      }
+    },
+
+    "ApprovalInfo": {
+      "type": "object",
+      "properties": {
+        "approver_name": { "type": "string", "description": "결재자" },
+        "stamp": { "type": "string", "description": "직인/서명" }
+      }
+    },
+
+   
+    "EstimateDoc": {
+      "type": "object",
+      "properties": {
+        "metadata": { "$ref": "#/definitions/Metadata" },
+        "supplier_info": { "$ref": "#/definitions/SupplierInfo" },
+        "item_list": { "$ref": "#/definitions/ItemList" },
+        "amount_summary": { "$ref": "#/definitions/AmountSummary" },
+        "memo": { "type": "string", "description": "메모 및 비고" }
+      },
+      "required": ["metadata", "supplier_info", "item_list", "amount_summary"]
+    },
+
+    "TradingStatementDoc": {
+      "type": "object",
+      "properties": {
+        "metadata": { "$ref": "#/definitions/Metadata" },
+        "supplier_info": { "$ref": "#/definitions/SupplierInfo" },
+        "item_list": { "$ref": "#/definitions/ItemList" },
+        "amount_summary": { "$ref": "#/definitions/AmountSummary" },
+        "receiver_stamp": { "type": "string", "description": "인수자(직인 등)" },
+        "memo": { "type": "string", "description": "비고" }
+      },
+      "required": ["metadata", "supplier_info", "item_list", "amount_summary"]
+    },
+
+    "TravelApplicationDoc": {
+      "type": "object",
+      "properties": {
+        "research_project_info": { "$ref": "#/definitions/ResearchProjectInfo" },
+        "travel_list": {
+          "type": "array",
+          "description": "출장 정보 목록",
+          "items": { "$ref": "#/definitions/TravelInfo" }
+        },
+        "metadata": { "$ref": "#/definitions/Metadata" },
+        "applicant_info": { "$ref": "#/definitions/ApplicantInfo" }
+      },
+      "required": ["research_project_info", "travel_list"]
+    },
+
+    "TravelExpenseDoc": {
+      "type": "object",
+      "properties": {
+        "research_project_info": { "$ref": "#/definitions/ResearchProjectInfo" },
+        "applicant_info": {
+          "type": "object",
+          "properties": {
+            "department": { "type": "string" },
+            "applicant_name": { "type": "string" },
+            "position": { "type": "string" },
+            "stamp": { "type": "string" },
+            "people_count": { "type": "number", "description": "출장 인원 수" }
+          }
+        },
+        "travel_info": {
+          "type": "object",
+          "properties": {
+            "date": { "type": "string", "description": "출장 일시" },
+            "destination": { "type": "string", "description": "출장 목적지/목적" },
+            "fare": { "type": "string", "description": "운임(내용 생략)" }
+          }
+        },
+        "finance_info": {
+          "type": "object",
+          "properties": {
+            "bank": { "type": "string" },
+            "account_holder": { "type": "string" },
+            "account_no": { "type": "string" },
+            "travel_cost_sum": { "type": "number", "description": "출장비 합계" }
+          }
+        },
+        "evidence": {
+          "type": "object",
+          "properties": {
+            "detail": {
+              "type": "object",
+              "properties": {
+                "daily_allowance": { "type": "number", "description": "일비 금액" },
+                "meal_allowance": { "type": "number", "description": "식비 금액" }
+              }
+            },
+            "receipt": { "type": "boolean", "description": "영수증 유무/파일첨부" }
+          }
+        },
+        "final_applicant_info": {
+          "type": "object",
+          "properties": {
+            "apply_date": { "type": "string", "format": "date" },
+            "applicant_name": { "type": "string" },
+            "stamp": { "type": "string" }
+          }
+        }
+      },
+      "required": ["research_project_info", "travel_info", "finance_info"]
+    },
+
+ 
+    "MeetingExpenseDoc": {
+      "type": "object",
+      "properties": {
+        "research_project_info": { "$ref": "#/definitions/ResearchProjectInfo" },
+        "meeting_info": { "$ref": "#/definitions/MeetingInfo" },
+        "participant_list": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Participant" },
+          "description": "참여인원 목록"
+        },
+        "applicant_info": {
+          "type": "object",
+          "properties": {
+            "apply_date": { "type": "string", "description": "신청일자" },
+            "rep_name": { "type": "string", "description": "대표자 성명" },
+            "stamp": { "type": "string", "description": "직인" }
+          }
+        },
+        "evidence": {
+          "type": "string",
+          "description": "증빙서류(카드매출전표 등)"
+        }
+      },
+      "required": ["research_project_info", "meeting_info"]
+    },
+
+    "MeetingMinutesDoc": {
+      "type": "object",
+      "properties": {
+        "meeting_info": {
+          "type": "object",
+          "properties": {
+            "date": { "type": "string", "description": "회의 날짜" },
+            "location": { "type": "string", "description": "장소" },
+            "topic": { "type": "string", "description": "주제" },
+            "content": { "type": "string", "description": "회의 내용" }
+          }
+        },
+        "internal_participants": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Participant" },
+          "description": "내부인원"
+        },
+        "external_participants": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Participant" },
+          "description": "외부인원"
+        },
+        "sign_info": {
+          "type": "object",
+          "properties": {
+            "write_date": { "type": "string", "description": "작성 일자" },
+            "rep_name": { "type": "string", "description": "대표자 성명" },
+            "rep_stamp": { "type": "string", "description": "직인" }
+          }
+        }
+      },
+      "required": ["meeting_info"]
+    },
+
+    "PurchaseOrderDoc": {
+      "type": "object",
+      "properties": {
+        "metadata": { "$ref": "#/definitions/Metadata" },
+       
+        "order_party_info": {
+          "type": "object",
+          "properties": {
+            "supplier_party": {
+              "type": "object",
+              "properties": {
+                "company_name": { "type": "string", "description": "수주처 상호명" },
+                "manager": { "type": "string", "description": "담당자" },
+                "phone": { "type": "string" },
+                "fax": { "type": "string" }
+              }
+            },
+            "order_party": {
+              "type": "object",
+              "properties": {
+                "company_name": { "type": "string", "description": "발주처 상호명" },
+                "manager": { "type": "string", "description": "담당자" },
+                "phone": { "type": "string" },
+                "fax": { "type": "string" }
+              }
+            },
+            "due_date": { "type": "string", "description": "납기일자" },
+            "delivery_place": { "type": "string", "description": "납품장소" },
+            "total_amount": { "type": "number", "description": "총 금액" }
+          }
+        },
+        "item_list": { "$ref": "#/definitions/ItemList" }
+      },
+      "required": ["metadata", "order_party_info", "item_list"]
+    },
+
+    "ExpertUtilPlanDoc": {
+      "type": "object",
+      "properties": {
+        "research_project_info": { "$ref": "#/definitions/ResearchProjectInfo" },
+        "util_plan": { "$ref": "#/definitions/UtilizationPlan" },
+        "expert_info": { "$ref": "#/definitions/ExpertInfo" },
+        "applicant_info": {
+          "type": "object",
+          "properties": {
+            "apply_date": { "type": "string", "description": "작성일자" },
+            "manager_name": { "type": "string", "description": "과제책임자" },
+            "stamp": { "type": "string", "description": "직인" }
+          }
+        },
+        "history": {
+          "type": "string",
+          "description": "이력사항(사진 첨부 등)"
+        }
+      },
+      "required": ["research_project_info", "util_plan", "expert_info"]
+    },
+
+    "ExpertConsultConfirmDoc": {
+      "type": "object",
+      "properties": {
+        "expert_info": { "$ref": "#/definitions/ExpertInfo" },
+        "research_project_info": { "$ref": "#/definitions/ResearchProjectInfo" },
+        "util_plan": {
+          "type": "object",
+          "properties": {
+            "date": { "type": "string", "description": "활용 일시" },
+            "cost_paid": { "type": "number", "description": "지급 비용" },
+            "bank": { "type": "string", "description": "은행명" },
+            "account_no": { "type": "string", "description": "계좌번호" }
+          }
+        },
+        "advice_detail": {
+          "type": "string",
+          "description": "자문 내역(혹은 별도 구조로 확장 가능)"
+        },
+        "photo": { "type": "string", "description": "사진(옵션)" },
+        "applicant_info": {
+          "type": "object",
+          "properties": {
+            "apply_date": { "type": "string", "description": "작성 일자" },
+            "name": { "type": "string", "description": "신청인" },
+            "stamp": { "type": "string", "description": "직인" }
+          }
+        }
+      },
+      "required": ["expert_info", "research_project_info", "util_plan"]
+    },
+
+    "ExpenditureDoc": {
+      "type": "object",
+      "properties": {
+        "approval_list": {
+          "type": "array",
+          "description": "결재자 목록",
+          "items": { "$ref": "#/definitions/ApprovalInfo" }
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "date_issued": { "type": "string", "description": "발의일자" },
+            "writer": { "type": "string", "description": "작성자" },
+            "department": { "type": "string", "description": "소속" },
+            "purpose": { "type": "string", "description": "목적" }
+          }
+        },
+        "expense_list": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "item_name": { "type": "string", "description": "적요(품목명)" },
+              "amount": { "type": "number", "description": "금액" },
+              "memo": { "type": "string", "description": "비고" }
+            }
+          }
+        },
+        "amount_summary": { "$ref": "#/definitions/AmountSummary" },
+        "applicant_info": {
+          "type": "object",
+          "properties": {
+            "apply_date": { "type": "string", "description": "작성 일자" },
+            "name": { "type": "string", "description": "담당자" },
+            "stamp": { "type": "string", "description": "직인" }
+          }
+        }
+      }
+    }
+  }
+}
