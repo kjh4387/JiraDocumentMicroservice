@@ -9,6 +9,7 @@ COPY environment.yml* .devcontainer/noop.txt /tmp/conda-tmp/
 RUN apt-get update && \
     export DEBIAN_FRONTEND=noninteractive && \
     apt-get install -y \
+    fonts-nanum\
     build-essential \
     libpango1.0-0 \
     libpangoft2-1.0-0 \

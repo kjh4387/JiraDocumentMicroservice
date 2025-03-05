@@ -26,6 +26,26 @@ class Repository(Generic[T], ABC):
         """엔티티 삭제"""
         pass
 
+    def find_one(self, query: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """단일 문서 조회"""
+        raise NotImplementedError("Subclasses must implement this method")
+    
+    def find_many(self, query: Dict[str, Any], limit: int = 100) -> List[Dict[str, Any]]:
+        """여러 문서 조회"""
+        raise NotImplementedError("Subclasses must implement this method")
+    
+    def insert_one(self, document: Dict[str, Any]) -> str:
+        """단일 문서 저장"""
+        raise NotImplementedError("Subclasses must implement this method")
+    
+    def update_one(self, query: Dict[str, Any], update: Dict[str, Any]) -> bool:
+        """단일 문서 업데이트"""
+        raise NotImplementedError("Subclasses must implement this method")
+    
+    def delete_one(self, query: Dict[str, Any]) -> bool:
+        """단일 문서 삭제"""
+        raise NotImplementedError("Subclasses must implement this method")
+
 class UnitOfWork(ABC):
     """단위 작업 인터페이스"""
     

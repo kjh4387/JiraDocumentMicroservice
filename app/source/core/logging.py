@@ -1,14 +1,21 @@
+from typing import Dict, Any
 import logging
 import sys
-from typing import Dict, Any
 import json
 from datetime import datetime
-from .interfaces import Logger
+from app.source.core.interfaces import Logger
+
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
 
 class JsonFormatter(logging.Formatter):
     """JSON 형식의 로그 포맷터"""
     
-    def format(self, record):
+    def _build_log_record(self, record):
+        """로그 레코드를 JSON 형식으로 변환"""
         log_record = {
             "timestamp": datetime.fromtimestamp(record.created).isoformat(),
             "level": record.levelname,
@@ -22,7 +29,11 @@ class JsonFormatter(logging.Formatter):
         if hasattr(record, "data") and record.data:
             log_record["data"] = record.data
         
-        return json.dumps(log_record)
+        return log_record
+    
+    def format(self, record):
+        log_record = self._build_log_record(record)
+        return json.dumps(log_record, cls=DateTimeEncoder)
 
 class ApplicationLogger(Logger):
     """애플리케이션 로거 구현"""

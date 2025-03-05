@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import MagicMock, patch
-from core.domain import Company
-from infrastructure.repositories.company_repo import CompanyRepository
-from core.exceptions import DatabaseError
+from app.source.core.domain import Company
+from app.source.infrastructure.repositories.company_repo import CompanyRepository
+from app.source.core.exceptions import DatabaseError
 
 class TestCompanyRepository(unittest.TestCase):
     """회사 저장소 테스트"""

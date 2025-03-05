@@ -1,9 +1,9 @@
 import os
 import sys
-from config.settings import get_settings
-from config.di_container import DIContainer
-from core.exceptions import DocumentAutomationError
-from core.logging import get_logger
+from app.source.config.settings import get_settings
+from app.source.config.di_container import DIContainer
+from app.source.core.exceptions import DocumentAutomationError
+from app.source.core.logging import get_logger
 
 logger = get_logger(__name__)
 

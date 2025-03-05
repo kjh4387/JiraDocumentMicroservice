@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>견적서 HTML</title>
+    <style>
+         /* 문서 규격 */
+        .A4 {
+            display: flex;
+            flex-direction: column;
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 20mm;
+            box-sizing: border-box;
+            background: white;
+            /* border: 1px solid black; */
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 5px;
+            text-align: center;
+        }
+        .header-table th, .header-table td {
+            border: none;
+        }
+        .title {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .memo {
+            margin-top: 10px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="A4">
+        <div class="title">견적서</div>
+        <table class="header-table">
+            <tr>
+                <td>날짜: 2025-02-26</td>
+                <td>사업장 소재지</td>
+            </tr>
+            <tr>
+                <td>수신: LamRESEARCH</td>
+                <td>상호</td>
+            </tr>
+            <tr>
+                <td>참조:</td>
+                <td>대표자성명 (대표자인)</td>
+            </tr>
+            <tr>
+                <td></td>
+                <td>전화번호: 010-0000-0000</td>
+            </tr>
+        </table>
+        <table>
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>품명</th>
+                    <th>규격</th>
+                    <th>수량</th>
+                    <th>단가</th>
+                    <th>공급가액</th>
+                    <th>세액</th>
+                    <th>합계</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- 14개의 빈 행 -->
+                <script>
+                    for (let i = 1; i <= 14; i++) {
+                        document.write(`<tr>
+                            <td>\${i}</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>`);
+                    }
+                </script>
+            </tbody>
+        </table>
+        <div class="memo">[MEMO] ※ 부가세 포함 가격입니다.</div>
+    </div>
+</body>
+</html>

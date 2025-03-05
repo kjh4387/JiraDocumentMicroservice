@@ -11,6 +11,12 @@ services:
       - .:/workspace
     environment:
       - ENV:development
+      # DB 접속 정보: Python 코드에서 os.getenv("DB_HOST") 등으로 가져갈 수 있음
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=mydb
+      - DB_USER=myuser
+      - DB_PASSWORD=mypassword
     depends_on:
       - app
     command: sleep infinity
@@ -27,6 +33,7 @@ services:
       - ./dbdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    
   
   app:
     build:

@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import MagicMock, patch
-from core.domain import Company, Employee, Research, Expert
-from application.services.data_enricher import DatabaseDataEnricher
-from application.services.document_service import DocumentService
-from core.exceptions import ValidationError, RenderingError, PdfGenerationError
+from app.source.core.domain import Company, Employee, Research, Expert
+from app.source.application.services.data_enricher import DatabaseDataEnricher
+from app.source.application.services.document_service import DocumentService
+from app.source.core.exceptions import ValidationError, RenderingError, PdfGenerationError
 
 class TestDataEnricher(unittest.TestCase):
     """데이터 보강 서비스 테스트"""

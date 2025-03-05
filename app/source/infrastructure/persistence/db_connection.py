@@ -1,9 +1,11 @@
 import psycopg2
 import psycopg2.extras
+import time
+import os
 from typing import List, Dict, Any, Tuple
-from core.interfaces import UnitOfWork
-from core.exceptions import DatabaseError
-from core.logging import get_logger
+from app.source.core.interfaces import UnitOfWork
+from app.source.core.exceptions import DatabaseError
+from app.source.core.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -13,23 +15,43 @@ class DatabaseConnection:
     def __init__(self, config: dict):
         self.config = config
         self.connection = None
-        logger.info("DatabaseConnection initialized", config=config)
+        logger.info("DatabaseConnection initialized", 
+                   host=config.get("host"), 
+                   database=config.get("database"))
     
-    def connect(self):
-        """데이터베이스 연결"""
+    def connect(self, max_retries=3, delay=2):
+        """데이터베이스 연결 (재시도 로직 포함)"""
         if not self.connection:
-            try:
-                self.connection = psycopg2.connect(
-                    host=self.config.get("host"),
-                    user=self.config.get("user"),
-                    password=self.config.get("password"),
-                    dbname=self.config.get("database"),
-                    port=self.config.get("port", 5432)
-                )
-                logger.debug("Database connection established")
-            except Exception as e:
-                logger.error("Database connection failed", error=str(e))
-                raise DatabaseError(f"Database connection failed: {str(e)}")
+            retries = 0
+            while retries < max_retries:
+                try:
+                    logger.debug(f"Connection attempt {retries+1}", 
+                               host=self.config.get("host"),
+                               port=self.config.get("port", 5432))
+                    
+                    self.connection = psycopg2.connect(
+                        host=self.config.get("host"),
+                        user=self.config.get("user"),
+                        password=self.config.get("password"),
+                        dbname=self.config.get("database"),
+                        port=self.config.get("port", 5432)
+                    )
+                    logger.debug("Database connection established")
+                    return self.connection
+                except Exception as e:
+                    retries += 1
+                    logger.warning(f"Connection attempt {retries} failed", 
+                                 error=str(e), 
+                                 host=self.config.get("host"))
+                    
+                    if retries < max_retries:
+                        logger.debug(f"Retrying in {delay} seconds...")
+                        time.sleep(delay)
+                    else:
+                        logger.error("Database connection failed after multiple attempts", 
+                                   error=str(e))
+                        raise DatabaseError(f"Database connection failed: {str(e)}")
+        
         return self.connection
     
     def close(self):

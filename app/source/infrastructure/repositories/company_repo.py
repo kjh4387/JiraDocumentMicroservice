@@ -1,9 +1,9 @@
 from typing import Dict, Any, List, Optional
-from core.interfaces import Repository
-from core.domain import Company
-from core.exceptions import EntityNotFoundError, DatabaseError
-from core.logging import get_logger
-from infrastructure.persistence.db_connection import DatabaseConnection
+from app.source.core.interfaces import Repository
+from app.source.core.domain import Company
+from app.source.core.exceptions import EntityNotFoundError, DatabaseError
+from app.source.core.logging import get_logger
+from app.source.infrastructure.persistence.db_connection import DatabaseConnection
 
 logger = get_logger(__name__)
 
@@ -35,7 +35,7 @@ class CompanyRepository(Repository[Company]):
     
     def find_by_criteria(self, criteria: Dict[str, Any]) -> List[Company]:
         """조건에 맞는 회사 목록 조회"""
-        logger.debug("Finding companies by criteria", criteria=criteria)
+        logger.debug("Finding company by criteria", criteria=criteria)
         conditions = []
         params = []
         

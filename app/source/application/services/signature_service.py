@@ -1,9 +1,9 @@
 import os
 import base64
 from typing import Optional
-from core.interfaces import Repository
-from core.domain import Employee
-from core.logging import get_logger
+from app.source.core.interfaces import Repository
+from app.source.core.domain import Employee
+from app.source.core.logging import get_logger
 
 logger = get_logger(__name__)
 

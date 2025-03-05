@@ -1,150 +1,130 @@
 from typing import Dict, Any, List
-from core.interfaces import DataEnricher, Repository
-from core.domain import Company, Employee, Research, Expert
-from core.logging import get_logger
+from app.source.core.interfaces import DataEnricher, Repository
+from app.source.core.domain import Company, Employee, Research, Expert
+from app.source.core.logging import get_logger
 
 logger = get_logger(__name__)
 
-class DatabaseDataEnricher(DataEnricher):
-    """데이터베이스를 사용한 문서 데이터 보강"""
+class DataEnricher:
+    """데이터 보강 서비스"""
     
-    def __init__(
-        self,
-        company_repo: Repository[Company],
-        employee_repo: Repository[Employee],
-        research_repo: Repository[Research],
-        expert_repo: Repository[Expert]
-    ):
-        self.company_repo = company_repo
-        self.employee_repo = employee_repo
-        self.research_repo = research_repo
-        self.expert_repo = expert_repo
-        logger.debug("DatabaseDataEnricher initialized")
+    def __init__(self, company_repository, employee_repository, 
+                research_repository, expert_repository):
+        self.company_repository = company_repository
+        self.employee_repository = employee_repository
+        self.research_repository = research_repository
+        self.expert_repository = expert_repository
+        logger.debug("DataEnricher initialized")
     
-    def enrich(self, document_type: str, data: Dict[str, Any]) -> Dict[str, Any]:
-        """문서 데이터 보강"""
-        logger.debug("Enriching document data", document_type=document_type)
-        
-        # 데이터 복사본 생성
-        enriched_data = data.copy()
-        
-        # 문서 유형별 보강 로직
-        if document_type in ["견적서", "거래명세서"]:
-            self._enrich_supplier_info(enriched_data.get("supplier_info", {}))
-        
-        if document_type in ["출장신청서", "출장정산신청서", "회의비사용신청서", "회의록"]:
-            self._enrich_participants(enriched_data.get("participants", []))
-            self._enrich_research_project(enriched_data.get("research_project_info", {}))
-        
-        if document_type in ["전문가활용계획서", "전문가자문확인서"]:
-            self._enrich_expert_info(enriched_data.get("expert_info", {}))
-            self._enrich_research_project(enriched_data.get("research_project_info", {}))
-        
-        if "approval_list" in enriched_data:
-            self._enrich_approval_list(enriched_data["approval_list"])
-        
-        logger.debug("Document data enriched successfully", document_type=document_type)
-        return enriched_data
-    
-    def _enrich_supplier_info(self, supplier_info: Dict[str, Any]) -> None:
-        """공급자 정보 보강"""
-        if not supplier_info:
-            return
-            
-        logger.debug("Enriching supplier info")
-        
-        if "company_id" in supplier_info:
-            company_id = supplier_info["company_id"]
-            company = self.company_repo.find_by_id(company_id)
-            
+    def enrich_company_data(self, company_id: str, data: dict) -> dict:
+        """회사 데이터 보강"""
+        try:
+            company = self.company_repository.find_one({"id": company_id})
             if company:
-                # ID는 유지하고 나머지 정보 업데이트
-                for key, value in company.__dict__.items():
-                    if key != "id" and value is not None:
-                        supplier_info[key] = value
-                
-                logger.debug("Supplier info enriched with company data", company_id=company_id)
-    
-    def _enrich_participants(self, participants: List[Dict[str, Any]]) -> None:
-        """참가자 정보 보강"""
-        if not participants:
-            return
-            
-        logger.debug("Enriching participants", count=len(participants))
+                data["company_info"] = {
+                    "name": company.get("name"),
+                    "address": company.get("address"),
+                    "business_number": company.get("business_number"),
+                    "representative": company.get("representative"),
+                    "tel": company.get("tel"),
+                    "fax": company.get("fax"),
+                    "email": company.get("email")
+                }
+                logger.debug("Company data enriched", company_id=company_id)
+            else:
+                logger.warning("Company not found", company_id=company_id)
+        except Exception as e:
+            logger.error(f"Failed to enrich company data: {str(e)}", company_id=company_id)
         
-        for i, participant in enumerate(participants):
-            if "employee_id" in participant:
-                employee_id = participant["employee_id"]
-                employee = self.employee_repo.find_by_id(employee_id)
-                
-                if employee:
-                    # ID는 유지하고 나머지 정보 업데이트
-                    for key, value in employee.__dict__.items():
-                        if key != "id" and value is not None:
-                            participant[key] = value
-                    
-                    logger.debug("Participant enriched with employee data", 
-                                employee_id=employee_id, index=i)
+        return data
     
-    def _enrich_research_project(self, research_info: Dict[str, Any]) -> None:
-        """연구 과제 정보 보강"""
-        if not research_info:
-            return
+    def enrich_employee_data(self, employee_id: str, data: dict) -> dict:
+        """직원 데이터 보강"""
+        try:
+            employee = self.employee_repository.find_one({"id": employee_id})
+            if employee:
+                data["employee_info"] = {
+                    "name": employee.get("name"),
+                    "employee_id": employee.get("employee_id"),
+                    "department": employee.get("department"),
+                    "position": employee.get("position"),
+                    "email": employee.get("email"),
+                    "contact": employee.get("contact"),
+                    "signature_image_url": employee.get("signature_image_url")
+                }
+                logger.debug("Employee data enriched", employee_id=employee_id)
+            else:
+                logger.warning("Employee not found", employee_id=employee_id)
+        except Exception as e:
+            logger.error(f"Failed to enrich employee data: {str(e)}", employee_id=employee_id)
             
-        logger.debug("Enriching research project info")
-        
-        if "project_id" in research_info:
-            project_id = research_info["project_id"]
-            research = self.research_repo.find_by_id(project_id)
-            
+        return data
+    
+    def enrich_research_data(self, research_id: str, data: dict) -> dict:
+        """연구 프로젝트 데이터 보강"""
+        try:
+            research = self.research_repository.find_one({"id": research_id})
             if research:
-                # ID는 유지하고 나머지 정보 업데이트
-                for key, value in research.__dict__.items():
-                    if key != "id" and value is not None:
-                        research_info[key] = value
-                
-                logger.debug("Research project info enriched", project_id=project_id)
+                data["research_info"] = {
+                    "name": research.get("name"),
+                    "code": research.get("code"),
+                    "period": research.get("period"),
+                    "budget": research.get("budget"),
+                    "manager": research.get("manager"),
+                    "description": research.get("description")
+                }
+                logger.debug("Research data enriched", research_id=research_id)
+            else:
+                logger.warning("Research not found", research_id=research_id)
+        except Exception as e:
+            logger.error(f"Failed to enrich research data: {str(e)}", research_id=research_id)
+            
+        return data
     
-    def _enrich_expert_info(self, expert_info: Dict[str, Any]) -> None:
-        """전문가 정보 보강"""
-        if not expert_info:
-            return
-            
-        logger.debug("Enriching expert info")
-        
-        if "expert_id" in expert_info:
-            expert_id = expert_info["expert_id"]
-            expert = self.expert_repo.find_by_id(expert_id)
-            
+    def enrich_expert_data(self, expert_id: str, data: dict) -> dict:
+        """전문가 데이터 보강"""
+        try:
+            expert = self.expert_repository.find_one({"id": expert_id})
             if expert:
-                # ID는 유지하고 나머지 정보 업데이트
-                for key, value in expert.__dict__.items():
-                    if key != "id" and value is not None:
-                        expert_info[key] = value
-                
-                logger.debug("Expert info enriched", expert_id=expert_id)
-    
-    def _enrich_approval_list(self, approval_list: List[Dict[str, Any]]) -> None:
-        """결재자 정보 보강"""
-        if not approval_list:
-            return
+                data["expert_info"] = {
+                    "name": expert.get("name"),
+                    "affiliation": expert.get("affiliation"),
+                    "position": expert.get("position"),
+                    "specialty": expert.get("specialty"),
+                    "contact": expert.get("contact"),
+                    "email": expert.get("email"),
+                    "bank_account": expert.get("bank_account")
+                }
+                logger.debug("Expert data enriched", expert_id=expert_id)
+            else:
+                logger.warning("Expert not found", expert_id=expert_id)
+        except Exception as e:
+            logger.error(f"Failed to enrich expert data: {str(e)}", expert_id=expert_id)
             
-        logger.debug("Enriching approval list", count=len(approval_list))
+        return data
+    
+    def enrich_approval_list(self, approver_ids: list, data: dict) -> dict:
+        """결재자 목록 데이터 보강"""
+        approval_list = []
         
-        for i, approver in enumerate(approval_list):
-            if "employee_id" in approver:
-                employee_id = approver["employee_id"]
-                employee = self.employee_repo.find_by_id(employee_id)
-                
+        for i, employee_id in enumerate(approver_ids):
+            try:
+                employee = self.employee_repository.find_one({"id": employee_id})
                 if employee:
-                    # 직원 정보로 결재자 정보 업데이트
-                    approver["name"] = employee.name
-                    approver["department"] = employee.department
-                    approver["position"] = employee.position
-                    
-                    # 서명 이미지가 있으면 추가
-                    if employee.signature:
-                        approver["signature"] = employee.signature
-                    
+                    approval_list.append({
+                        "order": i + 1,
+                        "name": employee.get("name"),
+                        "employee_id": employee.get("employee_id"),
+                        "department": employee.get("department"),
+                        "position": employee.get("position"),
+                        "signature_image_url": employee.get("signature_image_url"),
+                        "status": "pending"
+                    })
                     logger.debug("Approver enriched with employee data", 
                                 employee_id=employee_id, index=i)
+            except Exception as e:
+                logger.error(f"Failed to enrich approver data: {str(e)}", 
+                           employee_id=employee_id, index=i)
+        
+        data["approval_list"] = approval_list
+        return data

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>출장신청서</title>
+    <style>
+        /* 문서 규격 */
+        .A4 {
+            display: flex;
+            flex-direction: column;
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 20mm;
+            box-sizing: border-box;
+            background: white;
+            /* border: 1px solid black; */
+        }
+
+        table {
+            width: 100%;
+            margin-top: 10mm;
+            border: 1mm solid black;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 0.5mm solid #cccccc;
+            padding: 10px;
+            text-align: left;
+            height: 30px;
+        }
+
+        /* head */
+        .head {
+            text-align: center;
+            padding-bottom: 10mm;
+            border-bottom: 2px solid black;
+        }
+
+        /* title-table */
+
+
+        /* footer */
+        .footer {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            width: 100%;
+            padding: 5mm 0;
+            height: 30mm; /* 푸터 높이 조정 */
+            box-sizing: border-box;
+            margin-top: auto; /* 본문 내용이 길어져도 자동 조정 */
+        }
+
+        .footer-border {
+            width: 100%;
+            /* width: calc(100% - 40mm); */
+            border-top: 1px solid black;
+            margin-bottom: 5mm;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="A4">
+        <div class="head">
+            <div style="font-size: 2em;">출장신청서</div>
+        </div>
+        <div class="content">
+            <table>
+                <tbody>
+                    <tr>
+                        <td class="content" style="width: 20%;">연구 기간</td>
+                        <td>{{ research_project_info.project_period | format_date("YYYY.MM.DD") }}</td>
+                    </tr>
+                    <tr>
+                        <td class="content">연구 과제명</td>
+                        <td>{{ research_project_info.project_name }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="table">
+            <table id="peopleTable">
+                <thead>
+                    <tr>
+                        <th colspan="5" style="text-align: left;">다음과 같이 출장을 명함.</th>
+                    </tr>
+                    <tr>
+                        <th style="width: 12%;">성명</th>
+                        <th style="width: 36%;">출장목적</th>
+                        <th style="width: 20%;">출장기간</th>
+                        <th style="width: 20%;">출장지</th>
+                        <th style="width: 12%;">서명</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- 출장자 정보 -->
+                    {% for travel in travel_list %}
+                    <tr>
+                        <td>{{ travel.employee_name }}</td>
+                        <td>{{ travel.purpose }}</td>
+                        <td>{{ travel.start_date | format_date("MM/DD") }} ~ {{ travel.end_date | format_date("MM/DD") }}</td>
+                        <td>{{ travel.destination }}</td>
+                        <td>{{ travel.signature }}</td>
+                    </tr>
+                    {% endfor %}
+                    <!-- 빈 행 추가 -->
+                </tbody>
+            </table>
+        </div>
+        <div class="footer">
+            <div class="footer-border"></div>
+            <div class="footer-content">
+                <h3>작성일: {{ metadata.date_issued | format_date("YYYY년 MM월 DD일") }}</h3>
+                <h3>신청인) 소속: {{ applicant.department }} 성명: {{ applicant.name }} (인 또는 서명)</h3>
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+    function addData(name, purpose, period, place, signature) {
+        var table = document.getElementById("tableBody");
+        var rows = table.rows;
+
+        for (var i = 0; i < rows.length; i++) {
+            var cells = rows[i].cells;
+
+            // 비어있는 행 찾기 (첫 번째 열이 비어있는지 확인)
+            if (cells[0].textContent.trim() === "") {
+                cells[0].textContent = name;
+                cells[1].textContent = purpose;
+                cells[2].textContent = period;
+                cells[3].textContent = place;
+                cells[4].textContent = signature;
+                return; // 데이터 입력 후 종료
+            }
+        }
+
+        alert("⚠️ 모든 행이 채워져 있습니다. 더 이상 추가할 수 없습니다.");
+    }
+</script>
+</html>

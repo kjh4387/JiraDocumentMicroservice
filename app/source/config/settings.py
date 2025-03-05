@@ -1,8 +1,8 @@
 import os
 import json
 from typing import Dict, Any
-from core.exceptions import ConfigurationError
-from core.logging import get_logger
+from app.source.core.exceptions import ConfigurationError
+from app.source.core.logging import get_logger
 
 logger = get_logger(__name__)
 

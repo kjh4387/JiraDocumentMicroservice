@@ -1,14 +1,14 @@
 from typing import Dict, Any, List, Optional
-from core.interfaces import Repository
-from core.domain import Expert
-from core.exceptions import EntityNotFoundError, DatabaseError
-from core.logging import get_logger
-from infrastructure.persistence.db_connection import DatabaseConnection
+from app.source.core.interfaces import Repository
+from app.source.core.domain import Expert
+from app.source.core.exceptions import EntityNotFoundError, DatabaseError
+from app.source.core.logging import get_logger
+from app.source.infrastructure.persistence.db_connection import DatabaseConnection
 
 logger = get_logger(__name__)
 
 class ExpertRepository(Repository[Expert]):
-    """전문가 정보 저장소"""
+    """전문가 정보 DB 접근"""
     
     def __init__(self, db_connection: DatabaseConnection):
         self.db = db_connection

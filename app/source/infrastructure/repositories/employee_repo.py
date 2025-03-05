@@ -1,14 +1,14 @@
 from typing import Dict, Any, List, Optional
-from core.interfaces import Repository
-from core.domain import Employee
-from core.exceptions import EntityNotFoundError, DatabaseError
-from core.logging import get_logger
-from infrastructure.persistence.db_connection import DatabaseConnection
+from app.source.core.interfaces import Repository
+from app.source.core.domain import Employee
+from app.source.core.exceptions import EntityNotFoundError, DatabaseError
+from app.source.core.logging import get_logger
+from app.source.infrastructure.persistence.db_connection import DatabaseConnection
 
 logger = get_logger(__name__)
 
 class EmployeeRepository(Repository[Employee]):
-    """직원 정보 저장소"""
+    """직원 정보 DB 접근"""
     
     def __init__(self, db_connection: DatabaseConnection):
         self.db = db_connection
@@ -32,6 +32,26 @@ class EmployeeRepository(Repository[Employee]):
         except Exception as e:
             logger.error("Database error while finding employee", id=id, error=str(e))
             raise DatabaseError(f"Failed to find employee with ID {id}: {str(e)}")
+        
+    def find_by_email(self, email: str) -> Optional[Employee]:
+        """이메일로 직원 조회"""
+        logger.debug("Finding employee by email", email=email)
+        query = "SELECT * FROM employees WHERE email = %s"
+        
+        try:
+            result = self.db.execute_query(query, (email,))
+            
+            if not result:
+                logger.warning("Employee not found", email=email)
+                return None
+            
+            employee = Employee(**result[0])
+            logger.debug("Employee found", id=employee.id, name=employee.name)
+            return employee
+        except Exception as e:
+            logger.error("Database error while finding employee by email", email=email, error=str(e))
+            raise DatabaseError(f"Failed to find employee by email {email}: {str(e)}")
+    
     
     def find_by_criteria(self, criteria: Dict[str, Any]) -> List[Employee]:
         """조건에 맞는 직원 목록 조회"""

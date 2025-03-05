@@ -1,21 +1,21 @@
-from core.interfaces import (
+from app.source.core.interfaces import (
     SchemaValidator, DataEnricher, DocumentRenderer, 
     SectionRenderer, PdfGenerator, Repository, UnitOfWork
 )
-from core.domain import Company, Employee, Research, Expert
-from infrastructure.persistence.db_connection import DatabaseConnection, DatabaseUnitOfWork
-from infrastructure.repositories.company_repo import CompanyRepository
-from infrastructure.repositories.employee_repo import EmployeeRepository
-from infrastructure.repositories.research_repo import ResearchRepository
-from infrastructure.repositories.expert_repo import ExpertRepository
-from infrastructure.schema.validators import JsonSchemaValidator
-from infrastructure.rendering.section_renderer import JinjaSectionRenderer
-from infrastructure.rendering.document_renderer import JinjaDocumentRenderer
-from infrastructure.rendering.pdf_generator import WeasyPrintPdfGenerator
-from application.services.data_enricher import DatabaseDataEnricher
-from application.services.document_service import DocumentService
-from application.services.signature_service import SignatureService
-from core.logging import get_logger
+from app.source.core.domain import Company, Employee, Research, Expert
+from app.source.infrastructure.persistence.db_connection import DatabaseConnection, DatabaseUnitOfWork
+from app.source.infrastructure.repositories.company_repo import CompanyRepository
+from app.source.infrastructure.repositories.employee_repo import EmployeeRepository
+from app.source.infrastructure.repositories.research_repo import ResearchRepository
+from app.source.infrastructure.repositories.expert_repo import ExpertRepository
+from app.source.infrastructure.schema.validators import JsonSchemaValidator
+from app.source.infrastructure.rendering.section_renderer import JinjaSectionRenderer
+from app.source.infrastructure.rendering.document_renderer import JinjaDocumentRenderer
+from app.source.infrastructure.rendering.pdf_generator import WeasyPrintPdfGenerator
+from app.source.application.services.data_enricher import DatabaseDataEnricher
+from app.source.application.services.document_service import DocumentService
+from app.source.application.services.signature_service import SignatureService
+from app.source.core.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -120,8 +120,7 @@ class DIContainer:
         """문서 렌더러 인스턴스 반환"""
         if self._document_renderer is None:
             self._document_renderer = JinjaDocumentRenderer(
-                self.config["template_dir"], 
-                self.section_renderer
+                self.config["template_dir"]
             )
             logger.debug("DocumentRenderer created")
         return self._document_renderer
@@ -171,3 +170,32 @@ class DIContainer:
             )
             logger.debug("DocumentService created")
         return self._document_service
+
+    def _init_document_services(self):
+        """문서 관련 서비스 초기화"""
+        # 스키마 검증기
+        self.schema_validator = JsonSchemaValidator(self.config["schema_path"])
+        
+        # 데이터 보강 서비스
+        self.data_enricher = DatabaseDataEnricher(
+            self.company_repo,
+            self.employee_repo,
+            self.research_repo,
+            self.expert_repo
+        )
+        
+        # 문서 렌더러 (섹션 렌더러 제거)
+        self.document_renderer = JinjaDocumentRenderer(
+            self.config["template_dir"]
+        )
+        
+        # PDF 생성기
+        self.pdf_generator = WeasyPrintPdfGenerator()
+        
+        # 문서 서비스
+        self.document_service = DocumentService(
+            self.schema_validator,
+            self.data_enricher,
+            self.document_renderer,
+            self.pdf_generator
+        )
