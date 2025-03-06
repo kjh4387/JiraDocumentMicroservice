@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
+<!-- saved from url=(0066)file:///C:/Users/%EA%B9%80%EC%9E%90%ED%98%84/Desktop/estimate.html -->
+<html lang="ko"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>견적서</title>
     <style>
@@ -34,13 +34,12 @@
         .A4 {
             display: flex;
             flex-direction: column;
-            width: 210mm;  /* 너비 수정 */
+            width: 210mm;
             min-height: 297mm;
             margin: 0 auto;
-            padding: 10mm;  /* 여백 수정 */
+            padding: 10mm;
             box-sizing: border-box;
             background: white;
-            /* border: 1px solid black; */
         }
 
         /* 타이틀 */
@@ -52,15 +51,26 @@
 
         /* 테이블 컨테이너 */
         .content {
-            display: flex;
-            justify-content: space-between; /* 왼쪽 & 오른쪽 정렬 */
-            gap: 10mm; /* 테이블 사이 간격 */
+            display: table; /* flex에서 table로 변경 */
+            width: 100%;
+            margin-top: 10mm;
+            table-layout: fixed; /* 고정 테이블 레이아웃 사용 */
         }
 
-        /* 왼쪽 테이블 스타일 (새로운 스타일 적용) */
+        /* 테이블 셀 스타일 */
+        .content-cell {
+            display: table-cell;
+            vertical-align: top;
+        }
+        
+        .content-cell:first-child {
+            width: 45%; /* 왼쪽 셀 너비 */
+            padding-right: 10mm; /* 간격 */
+        }
+
+        /* 왼쪽 테이블 스타일 */
         .left-table {
-            width: 40%;
-            margin-top: 10mm;
+            width: 100%; /* 컨테이너의 100% */
             border-collapse: collapse;
         }
 
@@ -71,9 +81,9 @@
             height: 30px;
         }
 
-        /* 오른쪽 테이블 스타일 (기존 스타일 유지) */
+        /* 오른쪽 테이블 스타일 */
         .right-table {
-            width: 59%;
+            width: 100%; /* 컨테이너의 100% */
             border: 1mm solid black;
             border-collapse: collapse;
         }
@@ -107,49 +117,54 @@
             <div style="font-size: 2em;"> 견적서 </div>
         </div>
 
-        <div class="content" style="padding-top: 10mm;">
-            <!-- 왼쪽 테이블 (새 스타일 적용) -->
-            <table class="left-table">
-                <tbody>
-                    <tr>
-                        <td style="width: 30mm;">날 짜</td>
-                        <td>{{data.metadata.date_issued}}</td>
-                    </tr>
-                    <tr> 
-                        <td>수 신</td>
-                        <td></td>
-                    </tr>
-                    <tr>
-                        <td>참 조</td>
-                        <td></td>
-                    </tr>
-                </tbody>
-            </table>
+        <div class="content">
+            <!-- 왼쪽 테이블 컨테이너 -->
+            <div class="content-cell">
+                <table class="left-table">
+                    <tbody>
+                        <tr>
+                            <td style="width: 30mm;">날 짜</td>
+                            <td>{{data.metadata.date_issued}}</td>
+                        </tr>
+                        <tr> 
+                            <td>수 신</td>
+                            <td>{{data.metadata.receiver}}</td>
+                        </tr>
+                        <tr>
+                            <td>참 조</td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-            <!-- 오른쪽 테이블 (기존 스타일 유지) -->
-            <table class="right-table">
-                <tbody>
-                    <tr>
-                        <td style="width: 30mm;">사업장 소재지</td>
-                        <td></td>
-                    </tr>
-                    <tr> 
-                        <td>상호</td>
-                        <td></td>
-                    </tr>
-                    <tr>
-                        <td>대표자 성명</td>
-                        <td></td>
-                    </tr>
-                    <tr>
-                        <td>전화번호</td>
-                        <td></td>
-                    </tr>
-                </tbody>
-            </table>
+
+            <!-- 오른쪽 테이블 컨테이너 -->
+            <div class="content-cell">
+                <table class="right-table">
+                    <tbody>
+                        <tr>
+                            <td style="width: 25mm;">사업장 소재지</td>
+                            <td>{{data.supplier_info.address}}</td>
+                        </tr>
+                        <tr> 
+                            <td>상호</td>
+                            <td>{{data.supplier_info.company_name}}</td>
+                        </tr>
+                        <tr>
+                            <td>대표자 성명</td>
+                            <td>{{data.supplier_info.rep_name}}</td>
+                        </tr>
+                        <tr>
+                            <td>전화번호</td>
+                            <td>{{data.supplier_info.phone}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <table class="body-table">
+            <table class="body-table">
             <thead>
                 <tr>
                     <th>No.</th>
@@ -163,13 +178,55 @@
                 </tr>
             </thead>
             <tbody>
+                {% set total_amount = namespace(value=0) %}
+                {% set total_vat = namespace(value=0) %}
+                {% set grand_total = namespace(value=0) %}
                 {% for item in data.item_list %}
-                    <!-- item을 사용한 HTML 요소 -->
-                    <tr><td> </td><td>{{ item.name }}</td><td> </td><td> </td><td> </td></td> </td><td> </td><td> </td><td> </td></tr>
+                    {% set item_amount = (item.unit_price|int) * (item.quantity|int) %}
+                    {% set item_vat = ((item_amount * 0.1)|round)|int %}
+                    {% set item_total = item_amount + item_vat %}
+                    
+                    {% set total_amount.value = total_amount.value + item_amount %}
+                    {% set total_vat.value = total_vat.value + item_vat %}
+                    {% set grand_total.value = grand_total.value + item_total %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ item.name }}</td>
+                    <td>EA</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.unit_price }}</td>
+                    <td>{{ item_amount }}</td>
+                    <td>{{ item_vat }}</td>
+                    <td>{{ item_total }}</td>
+                </tr>
                 {% endfor %}
+                <!-- 합계 행 추가 -->
+                <tr style="font-weight: bold; background-color: #f5f5f5;">
+                    <td colspan="5" style="text-align: center;">합계</td>
+                    <td>
+                        {{ total_amount.value }}
+                    </td>
+                    <td>
+                        {{ total_vat.value }}
+                    </td>
+                    <td>
+                        {{ grand_total.value }}
+                    </td>
+                </tr>
             </tbody>
-        </table>
+            </table>
         <div class="memo">[MEMO] ※ 부가세 포함 가격입니다.</div>
+
+        <!-- 디버깅 정보 섹션 추가 -->
+        <div style="margin-top: 20mm; border: 1px dashed #ccc; padding: 5mm; background-color: #f9f9f9;">
+            <h3>디버깅 정보:</h3>
+            <p>전체 데이터 객체: {{ data }}</p>
+            <p>metadata 객체: {{ data.metadata if data is defined and data.metadata is defined else 'metadata 없음' }}</p>
+            <p>customer_name: {{ data.metadata.customer_name if data is defined and data.metadata is defined and data.metadata.customer_name is defined else '없음' }}</p>
+            <p>customer_address: {{ data.metadata.customer_address if data is defined and data.metadata is defined and data.metadata.customer_address is defined else '없음' }}</p>
+            <p>customer_representative: {{ data.metadata.customer_representative if data is defined and data.metadata is defined and data.metadata.customer_representative is defined else '없음' }}</p>
+            <p>customer_phone: {{ data.metadata.customer_phone if data is defined and data.metadata is defined and data.metadata.customer_phone is defined else '없음' }}</p>
+        </div>
     </div>
-</body>
-</html>
+
+</body></html>

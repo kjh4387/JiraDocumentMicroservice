@@ -254,7 +254,12 @@ class TestDocumentFlow(unittest.TestCase):
                     "quantity": 2,
                     "unit_price": 50000,
                     "amount": 100000,
-                    "vat": 10000
+                },
+                {
+                    "name": "통합테스트 상품2",
+                    "quantity": 1,
+                    "unit_price": 30000,
+                    "amount": 30000,
                 }
             ],
             "amount_summary": {
