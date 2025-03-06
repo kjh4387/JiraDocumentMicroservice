@@ -14,7 +14,9 @@
 			"extensions": [
 				"esbenp.prettier-vscode",
 				"ms-azuretools.vscode-docker",
-				"GitHub.copilot"
+				"GitHub.copilot",
+				"tomoki1207.pdf",
+				"tht13.html-preview-vscode"
 			],
 			"settings": {
 				"terminal.integrated.defaultProfile.linux": "/bin/bash"
