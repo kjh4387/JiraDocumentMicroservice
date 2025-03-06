@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>견적서</title>
+    <style>
+        /* 프린트 관련 설정 */
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        
+        @media print {
+            html, body {
+                width: 210mm;
+                height: 297mm;
+                margin: 0;
+                padding: 0;
+            }
+            .A4 {
+                margin: 0;
+                border: initial;
+                border-radius: initial;
+                width: initial;
+                min-height: initial;
+                box-shadow: initial;
+                background: initial;
+                page-break-after: always;
+            }
+        }
+        
+        /* 문서 규격 */
+        .A4 {
+            display: flex;
+            flex-direction: column;
+            width: 210mm;  /* 너비 수정 */
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 10mm;  /* 여백 수정 */
+            box-sizing: border-box;
+            background: white;
+            /* border: 1px solid black; */
+        }
+
+        /* 타이틀 */
+        .title {
+            text-align: center;
+            padding-bottom: 5mm;  /* 여백 축소 */
+            border-bottom: 2px solid black;
+        }
+
+        /* 테이블 컨테이너 */
+        .content {
+            display: flex;
+            justify-content: space-between; /* 왼쪽 & 오른쪽 정렬 */
+            gap: 10mm; /* 테이블 사이 간격 */
+        }
+
+        /* 왼쪽 테이블 스타일 (새로운 스타일 적용) */
+        .left-table {
+            width: 40%;
+            margin-top: 10mm;
+            border-collapse: collapse;
+        }
+
+        .left-table th, .left-table td {
+            border-bottom: 1px solid black;
+            padding: 10px;
+            text-align: left;
+            height: 30px;
+        }
+
+        /* 오른쪽 테이블 스타일 (기존 스타일 유지) */
+        .right-table {
+            width: 59%;
+            border: 1mm solid black;
+            border-collapse: collapse;
+        }
+
+        .right-table th, .right-table td {
+            border: 0.5mm solid #cccccc;
+            padding: 10px;
+            text-align: left;
+            height: 30px;
+        }
+
+        .body-table {
+            width: 100%;
+            margin-top: 10mm;
+            border: 1mm solid black;
+            border-collapse: collapse;
+        }
+
+        .body-table th, .body-table td{
+            border: 0.5mm solid #cccccc;
+            padding: 10px;
+            text-align: left;
+            height: 30px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="A4">
+        <div class="title">
+            <div style="font-size: 2em;"> 견적서 </div>
+        </div>
+
+        <div class="content" style="padding-top: 10mm;">
+            <!-- 왼쪽 테이블 (새 스타일 적용) -->
+            <table class="left-table">
+                <tbody>
+                    <tr>
+                        <td style="width: 30mm;">날 짜</td>
+                        <td>{{data.metadata.date_issued}}</td>
+                    </tr>
+                    <tr> 
+                        <td>수 신</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>참 조</td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- 오른쪽 테이블 (기존 스타일 유지) -->
+            <table class="right-table">
+                <tbody>
+                    <tr>
+                        <td style="width: 30mm;">사업장 소재지</td>
+                        <td></td>
+                    </tr>
+                    <tr> 
+                        <td>상호</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>대표자 성명</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>전화번호</td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <table class="body-table">
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>품명</th>
+                    <th>규격</th>
+                    <th>수량</th>
+                    <th>단가</th>
+                    <th>공급가액</th>
+                    <th>세액</th>
+                    <th>합계</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data.item_list %}
+                    <!-- item을 사용한 HTML 요소 -->
+                    <tr><td> </td><td>{{ item.name }}</td><td> </td><td> </td><td> </td></td> </td><td> </td><td> </td><td> </td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="memo">[MEMO] ※ 부가세 포함 가격입니다.</div>
+    </div>
+</body>
+</html>

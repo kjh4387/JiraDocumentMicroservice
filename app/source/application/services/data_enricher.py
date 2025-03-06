@@ -1,7 +1,7 @@
 from typing import Dict, Any, List
-from core.interfaces import DataEnricher, Repository
-from core.domain import Company, Employee, Research, Expert
-from core.logging import get_logger
+from app.source.core.interfaces import DataEnricher, Repository
+from app.source.core.domain import Company, Employee, Research, Expert
+from app.source.core.logging import get_logger
 
 logger = get_logger(__name__)
 

@@ -25,6 +25,8 @@ class Employee:
     email: Optional[str] = None
     phone: Optional[str] = None
     signature: Optional[str] = None
+    bank_name: Optional[str] = None
+    account_number: Optional[str] = None
 
 @dataclass
 class Research:

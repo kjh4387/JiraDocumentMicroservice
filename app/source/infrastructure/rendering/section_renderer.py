@@ -2,9 +2,9 @@ import os
 from typing import Dict, Any
 from jinja2 import Environment, FileSystemLoader
 import jinja2
-from core.interfaces import SectionRenderer
-from core.exceptions import RenderingError
-from core.logging import get_logger
+from app.source.core.interfaces import SectionRenderer
+from app.source.core.exceptions import RenderingError
+from app.source.core.logging import get_logger
 
 logger = get_logger(__name__)
 

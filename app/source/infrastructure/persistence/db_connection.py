@@ -1,9 +1,9 @@
 import psycopg2
 import psycopg2.extras
 from typing import List, Dict, Any, Tuple
-from core.interfaces import UnitOfWork
-from core.exceptions import DatabaseError
-from core.logging import get_logger
+from app.source.core.interfaces import UnitOfWork
+from app.source.core.exceptions import DatabaseError
+from app.source.core.logging import get_logger
 
 logger = get_logger(__name__)
 

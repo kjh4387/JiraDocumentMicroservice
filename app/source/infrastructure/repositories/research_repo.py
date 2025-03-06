@@ -1,9 +1,9 @@
 from typing import Dict, Any, List, Optional
-from core.interfaces import Repository
-from core.domain import Research
-from core.exceptions import EntityNotFoundError, DatabaseError
-from core.logging import get_logger
-from infrastructure.persistence.db_connection import DatabaseConnection
+from app.source.core.interfaces import Repository
+from app.source.core.domain import Research
+from app.source.core.exceptions import EntityNotFoundError, DatabaseError
+from app.source.core.logging import get_logger
+from app.source.infrastructure.persistence.db_connection import DatabaseConnection
 
 logger = get_logger(__name__)
 

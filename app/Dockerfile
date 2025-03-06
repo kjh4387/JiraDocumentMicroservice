@@ -9,6 +9,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 필수 시스템 패키지 설치 (WeasyPrint 등 외부 의존성)
 RUN apt-get update && apt-get install -y \
     build-essential \
+    fonts-nanum\
     libpango1.0-0 \
     libpangoft2-1.0-0 \
     libpangocairo-1.0-0 \

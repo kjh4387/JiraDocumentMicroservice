@@ -2,9 +2,9 @@ import json
 import jsonschema
 from jsonschema import validate
 from typing import Dict, Any, Optional, Tuple
-from core.interfaces import SchemaValidator
-from core.exceptions import ValidationError, SchemaError
-from core.logging import get_logger
+from app.source.core.interfaces import SchemaValidator
+from app.source.core.exceptions import ValidationError, SchemaError
+from app.source.core.logging import get_logger
 
 logger = get_logger(__name__)
 

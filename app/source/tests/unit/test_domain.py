@@ -1,7 +1,7 @@
 import unittest
 from datetime import date
 
-from core.domain import Company, Employee, Research, Expert, Document, DocumentSection
+from app.source.core.domain import Company, Employee, Research, Expert, Document, DocumentSection
 
 class TestDomainModels(unittest.TestCase):
     """도메인 모델 테스트"""

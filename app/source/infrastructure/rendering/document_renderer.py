@@ -1,8 +1,8 @@
 from typing import Dict, Any
 from jinja2 import Environment, FileSystemLoader
-from core.interfaces import DocumentRenderer, SectionRenderer
-from core.exceptions import RenderingError
-from core.logging import get_logger
+from app.source.core.interfaces import DocumentRenderer, SectionRenderer
+from app.source.core.exceptions import RenderingError
+from app.source.core.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -58,16 +58,16 @@ class JinjaDocumentRenderer(DocumentRenderer):
     def _get_template_name(self, document_type: str) -> str:
         """문서 유형에 맞는 템플릿 파일명 반환"""
         mapping = {
-            "견적서": "documents/estimate.html",
-            "거래명세서": "documents/trading_statement.html",
-            "출장신청서": "documents/travel_application.html",
-            "출장정산신청서": "documents/travel_expense.html",
-            "회의비사용신청서": "documents/meeting_expense.html",
-            "회의록": "documents/meeting_minutes.html",
-            "구매의뢰서": "documents/purchase_order.html",
-            "전문가활용계획서": "documents/expert_util_plan.html",
-            "전문가자문확인서": "documents/expert_consult_confirm.html",
-            "지출결의서": "documents/expenditure.html"
+            "견적서": "estimate.html",
+            "거래명세서": "trading_statement.html",
+            "출장신청서": "travel_application.html",
+            "출장정산신청서": "travel_expense.html",
+            "회의비사용신청서": "meeting_expense.html",
+            "회의록": "meeting_minutes.html",
+            "구매의뢰서": "purchase_order.html",
+            "전문가활용계획서": "expert_util_plan.html",
+            "전문가자문확인서": "expert_consult_confirm.html",
+            "지출결의서": "expenditure.html"
         }
         
         if document_type not in mapping:

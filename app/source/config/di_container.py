@@ -1,21 +1,21 @@
-from core.interfaces import (
+from app.source.core.interfaces import (
     SchemaValidator, DataEnricher, DocumentRenderer, 
     SectionRenderer, PdfGenerator, Repository, UnitOfWork
 )
-from core.domain import Company, Employee, Research, Expert
-from infrastructure.persistence.db_connection import DatabaseConnection, DatabaseUnitOfWork
-from infrastructure.repositories.company_repo import CompanyRepository
-from infrastructure.repositories.employee_repo import EmployeeRepository
-from infrastructure.repositories.research_repo import ResearchRepository
-from infrastructure.repositories.expert_repo import ExpertRepository
-from infrastructure.schema.validators import JsonSchemaValidator
-from infrastructure.rendering.section_renderer import JinjaSectionRenderer
-from infrastructure.rendering.document_renderer import JinjaDocumentRenderer
-from infrastructure.rendering.pdf_generator import WeasyPrintPdfGenerator
-from application.services.data_enricher import DatabaseDataEnricher
-from application.services.document_service import DocumentService
-from application.services.signature_service import SignatureService
-from core.logging import get_logger
+from app.source.core.domain import Company, Employee, Research, Expert
+from app.source.infrastructure.persistence.db_connection import DatabaseConnection, DatabaseUnitOfWork
+from app.source.infrastructure.repositories.company_repo import CompanyRepository
+from app.source.infrastructure.repositories.employee_repo import EmployeeRepository
+from app.source.infrastructure.repositories.research_repo import ResearchRepository
+from app.source.infrastructure.repositories.expert_repo import ExpertRepository
+from app.source.infrastructure.schema.validators import JsonSchemaValidator
+from app.source.infrastructure.rendering.section_renderer import JinjaSectionRenderer
+from app.source.infrastructure.rendering.document_renderer import JinjaDocumentRenderer
+from app.source.infrastructure.rendering.pdf_generator import WeasyPrintPdfGenerator
+from app.source.application.services.data_enricher import DatabaseDataEnricher
+from app.source.application.services.document_service import DocumentService
+from app.source.application.services.signature_service import SignatureService
+from app.source.core.logging import get_logger
 
 logger = get_logger(__name__)
 

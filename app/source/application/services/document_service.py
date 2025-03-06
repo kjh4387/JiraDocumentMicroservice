@@ -2,9 +2,9 @@ from typing import Dict, Any, Optional
 import os
 import uuid
 from datetime import datetime
-from core.interfaces import SchemaValidator, DataEnricher, DocumentRenderer, PdfGenerator
-from core.exceptions import ValidationError, RenderingError, PdfGenerationError
-from core.logging import get_logger
+from app.source.core.interfaces import SchemaValidator, DataEnricher, DocumentRenderer, PdfGenerator
+from app.source.core.exceptions import ValidationError, RenderingError, PdfGenerationError
+from app.source.core.logging import get_logger
 
 logger = get_logger(__name__)
 

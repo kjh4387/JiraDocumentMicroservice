@@ -1,9 +1,9 @@
 from typing import Dict, Any, List, Optional
-from core.interfaces import Repository
-from core.domain import Employee
-from core.exceptions import EntityNotFoundError, DatabaseError
-from core.logging import get_logger
-from infrastructure.persistence.db_connection import DatabaseConnection
+from app.source.core.interfaces import Repository
+from app.source.core.domain import Employee
+from app.source.core.exceptions import EntityNotFoundError, DatabaseError
+from app.source.infrastructure.persistence.db_connection import DatabaseConnection
+from app.source.core.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -81,12 +81,12 @@ class EmployeeRepository(Repository[Employee]):
             query = """
                 UPDATE employees 
                 SET name = %s, department = %s, position = %s, email = %s,
-                    phone = %s, signature = %s
+                    phone = %s, signature = %s, bank_name = %s, account_number = %s
                 WHERE id = %s
             """
             params = (
                 employee.name, employee.department, employee.position, employee.email,
-                employee.phone, employee.signature, employee.id
+                employee.phone, employee.signature, employee.bank_name, employee.account_number, employee.id
             )
             try:
                 self.db.execute_query(query, params)
@@ -98,12 +98,12 @@ class EmployeeRepository(Repository[Employee]):
             # 삽입
             query = """
                 INSERT INTO employees 
-                (id, name, department, position, email, phone, signature)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                (id, name, department, position, email, phone, signature, bank_name, account_number)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             params = (
                 employee.id, employee.name, employee.department, employee.position,
-                employee.email, employee.phone, employee.signature
+                employee.email, employee.phone, employee.signature, employee.bank_name, employee.account_number
             )
             try:
                 self.db.execute_query(query, params)
