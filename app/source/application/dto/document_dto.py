@@ -38,20 +38,20 @@ class AmountSummaryDTO(BaseModel):
 
 class ParticipantDTO(BaseModel):
     """참가자 DTO"""
-    employee_id: str = Field(..., description="직원 ID")
+    email: str = Field(..., description="이메일")
+    employee_id: Optional[str] = Field(None, description="직원 ID")
     name: Optional[str] = Field(None, description="이름")
     department: Optional[str] = Field(None, description="부서")
     position: Optional[str] = Field(None, description="직위")
     phone: Optional[str] = Field(None, description="연락처")
-    email: Optional[str] = Field(None, description="이메일")
 
 class ResearchProjectInfoDTO(BaseModel):
     """연구 과제 정보 DTO"""
-    project_id: str = Field(..., description="과제 ID")
+    project_code: str = Field(..., description="과제 코드")
+    project_id: Optional[str] = Field(None, description="과제 ID")
     project_name: Optional[str] = Field(None, description="과제명")
     project_period: Optional[str] = Field(None, description="과제 기간")
     project_manager: Optional[str] = Field(None, description="과제 책임자")
-    project_code: Optional[str] = Field(None, description="과제 코드")
 
 class TravelInfoDTO(BaseModel):
     """출장 정보 DTO"""
@@ -75,7 +75,8 @@ class ExpertInfoDTO(BaseModel):
 
 class ApproverDTO(BaseModel):
     """결재자 DTO"""
-    employee_id: str = Field(..., description="직원 ID")
+    email: str = Field(..., description="이메일")
+    employee_id: Optional[str] = Field(None, description="직원 ID")
     name: Optional[str] = Field(None, description="이름")
     position: Optional[str] = Field(None, description="직위")
     department: Optional[str] = Field(None, description="부서")

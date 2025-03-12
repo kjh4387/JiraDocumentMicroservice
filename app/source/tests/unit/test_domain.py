@@ -44,13 +44,15 @@ class TestDomainModels(unittest.TestCase):
         """연구 과제 모델 생성 테스트"""
         research = Research(
             id="PROJ-001",
-            project_name="AI 기반 문서 자동화 시스템",
+            project_name="AI 기반 문서 자동화 연구",
+            project_code="AI-2023-001",
             project_period="2023-01-01 ~ 2023-12-31",
             project_manager="김연구"
         )
         
         self.assertEqual(research.id, "PROJ-001")
-        self.assertEqual(research.project_name, "AI 기반 문서 자동화 시스템")
+        self.assertEqual(research.project_name, "AI 기반 문서 자동화 연구")
+        self.assertEqual(research.project_code, "AI-2023-001")
         self.assertEqual(research.project_period, "2023-01-01 ~ 2023-12-31")
     
     def test_expert_creation(self):

@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from datetime import date
 from typing import List, Optional, Dict, Any
+from dataclasses import dataclass
+from typing import Optional
 
 @dataclass
 class Company:
@@ -20,11 +22,12 @@ class Employee:
     """직원 정보"""
     id: str
     name: str
+    email: str  
     department: Optional[str] = None
     position: Optional[str] = None
-    email: Optional[str] = None
     phone: Optional[str] = None
     signature: Optional[str] = None
+    stamp: Optional[str] = None  # 추가된 필드: 직원의 직인 정보를 저장
     bank_name: Optional[str] = None
     account_number: Optional[str] = None
 
@@ -33,22 +36,10 @@ class Research:
     """연구 과제 정보"""
     id: str
     project_name: str
+    project_code: str
     project_period: Optional[str] = None
     project_manager: Optional[str] = None
-    project_code: Optional[str] = None
-
-@dataclass
-class Expert:
-    """전문가 정보"""
-    id: str
-    name: str
-    affiliation: Optional[str] = None
-    position: Optional[str] = None
-    dob: Optional[str] = None
-    address: Optional[str] = None
-    classification: Optional[str] = None
-    email: Optional[str] = None
-    phone: Optional[str] = None
+    project_manager_phone: Optional[str] = None
 
 @dataclass
 class DocumentSection:
@@ -65,3 +56,16 @@ class Document:
     updated_at: date = field(default_factory=date.today)
     sections: List[DocumentSection] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class Expert:
+    """전문가 정보"""
+    id: str
+    name: str
+    affiliation: Optional[str] = None
+    position: Optional[str] = None
+    dob: Optional[str] = None
+    address: Optional[str] = None
+    classification: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None

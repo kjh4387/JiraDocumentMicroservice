@@ -32,7 +32,7 @@ class TestDataEnricher(unittest.TestCase):
         )
         
         self.test_employee = Employee(
-            id="EMP-001",
+            id="EMP-001",                                                                                                                                                               
             name="홍길동",
             department="개발팀",
             position="선임연구원",
@@ -41,7 +41,8 @@ class TestDataEnricher(unittest.TestCase):
         
         self.test_research = Research(
             id="PROJ-001",
-            project_name="AI 기반 문서 자동화 시스템",
+            project_name="AI 기반 문서 자동화 연구",
+            project_code="AI-2023-001",
             project_period="2023-01-01 ~ 2023-12-31",
             project_manager="김연구"
         )
@@ -118,7 +119,7 @@ class TestDataEnricher(unittest.TestCase):
         result = self.enricher.enrich("출장신청서", data)
         
         # 검증
-        self.assertEqual(result["research_project_info"]["project_name"], "AI 기반 문서 자동화 시스템")
+        self.assertEqual(result["research_project_info"]["project_name"], "AI 기반 문서 자동화 연구")
         self.assertEqual(result["research_project_info"]["project_period"], "2023-01-01 ~ 2023-12-31")
         self.assertEqual(result["research_project_info"]["project_manager"], "김연구")
         

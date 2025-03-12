@@ -53,6 +53,7 @@ class DatabaseDataEnricher(DataEnricher):
             
         logger.debug("Enriching supplier info")
         
+        # 기존 ID 기반 조회 로직 (하위 호환성 유지)
         if "company_id" in supplier_info:
             company_id = supplier_info["company_id"]
             company = self.company_repo.find_by_id(company_id)
@@ -64,6 +65,20 @@ class DatabaseDataEnricher(DataEnricher):
                         supplier_info[key] = value
                 
                 logger.debug("Supplier info enriched with company data", company_id=company_id)
+        
+        # 새로운 회사명 기반 조회 로직
+        elif "company_name" in supplier_info:
+            company_name = supplier_info["company_name"]
+            company = self.company_repo.find_by_name(company_name)
+            
+            if company:
+                # 회사 ID 설정 및 나머지 정보 업데이트
+                supplier_info["company_id"] = company.id
+                for key, value in company.__dict__.items():
+                    if key != "id" and value is not None:
+                        supplier_info[key] = value
+                
+                logger.debug("Supplier info enriched with company data by name", company_name=company_name)
     
     def _enrich_participants(self, participants: List[Dict[str, Any]]) -> None:
         """참가자 정보 보강"""
@@ -73,6 +88,7 @@ class DatabaseDataEnricher(DataEnricher):
         logger.debug("Enriching participants", count=len(participants))
         
         for i, participant in enumerate(participants):
+            # 기존 ID 기반 조회 로직 (하위 호환성 유지)
             if "employee_id" in participant:
                 employee_id = participant["employee_id"]
                 employee = self.employee_repo.find_by_id(employee_id)
@@ -83,8 +99,23 @@ class DatabaseDataEnricher(DataEnricher):
                         if key != "id" and value is not None:
                             participant[key] = value
                     
-                    logger.debug("Participant enriched with employee data", 
+                    logger.debug("Participant enriched with employee data by ID", 
                                 employee_id=employee_id, index=i)
+            
+            # 새로운 Email 기반 조회 로직
+            elif "email" in participant:
+                email = participant["email"]
+                employee = self.employee_repo.find_by_email(email)
+                
+                if employee:
+                    # ID 및 기타 정보 업데이트
+                    participant["employee_id"] = employee.id
+                    for key, value in employee.__dict__.items():
+                        if key != "id" and value is not None:
+                            participant[key] = value
+                    
+                    logger.debug("Participant enriched with employee data by email", 
+                                email=email, index=i)
     
     def _enrich_research_project(self, research_info: Dict[str, Any]) -> None:
         """연구 과제 정보 보강"""
@@ -93,6 +124,7 @@ class DatabaseDataEnricher(DataEnricher):
             
         logger.debug("Enriching research project info")
         
+        # 기존 ID 기반 조회 로직 (하위 호환성 유지)
         if "project_id" in research_info:
             project_id = research_info["project_id"]
             research = self.research_repo.find_by_id(project_id)
@@ -103,7 +135,21 @@ class DatabaseDataEnricher(DataEnricher):
                     if key != "id" and value is not None:
                         research_info[key] = value
                 
-                logger.debug("Research project info enriched", project_id=project_id)
+                logger.debug("Research project info enriched by ID", project_id=project_id)
+        
+        # 새로운 project_code 기반 조회 로직
+        elif "project_code" in research_info:
+            project_code = research_info["project_code"]
+            research = self.research_repo.find_by_project_code(project_code)
+            
+            if research:
+                # ID 및 기타 정보 업데이트
+                research_info["project_id"] = research.id
+                for key, value in research.__dict__.items():
+                    if key != "id" and value is not None:
+                        research_info[key] = value
+                
+                logger.debug("Research project info enriched by code", project_code=project_code)
     
     def _enrich_expert_info(self, expert_info: Dict[str, Any]) -> None:
         """전문가 정보 보강"""
@@ -132,6 +178,7 @@ class DatabaseDataEnricher(DataEnricher):
         logger.debug("Enriching approval list", count=len(approval_list))
         
         for i, approver in enumerate(approval_list):
+            # 기존 ID 기반 조회 로직 (하위 호환성 유지)
             if "employee_id" in approver:
                 employee_id = approver["employee_id"]
                 employee = self.employee_repo.find_by_id(employee_id)
@@ -146,5 +193,24 @@ class DatabaseDataEnricher(DataEnricher):
                     if employee.signature:
                         approver["signature"] = employee.signature
                     
-                    logger.debug("Approver enriched with employee data", 
+                    logger.debug("Approver enriched with employee data by ID", 
                                 employee_id=employee_id, index=i)
+            
+            # 새로운 Email 기반 조회 로직
+            elif "email" in approver:
+                email = approver["email"]
+                employee = self.employee_repo.find_by_email(email)
+                
+                if employee:
+                    # ID 및 기타 정보 업데이트
+                    approver["employee_id"] = employee.id
+                    approver["name"] = employee.name
+                    approver["department"] = employee.department
+                    approver["position"] = employee.position
+                    
+                    # 서명 이미지가 있으면 추가
+                    if employee.signature:
+                        approver["signature"] = employee.signature
+                    
+                    logger.debug("Approver enriched with employee data by email", 
+                                email=email, index=i)

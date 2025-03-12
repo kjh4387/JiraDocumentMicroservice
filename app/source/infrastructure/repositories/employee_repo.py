@@ -69,6 +69,25 @@ class EmployeeRepository(Repository[Employee]):
             logger.error("Database error while finding employees by department", department=department, error=str(e))
             raise DatabaseError(f"Failed to find employees by department {department}: {str(e)}")
     
+    def find_by_email(self, email: str) -> Optional[Employee]:
+        """이메일로 직원 조회"""
+        logger.debug("Finding employee by email", email=email)
+        query = "SELECT * FROM employees WHERE email = %s"
+        
+        try:
+            result = self.db.execute_query(query, (email,))
+            
+            if not result:
+                logger.warning("Employee not found", email=email)
+                return None
+            
+            employee = Employee(**result[0])
+            logger.debug("Employee found", id=employee.id, email=employee.email)
+            return employee
+        except Exception as e:
+            logger.error("Database error while finding employee by email", email=email, error=str(e))
+            raise DatabaseError(f"Failed to find employee with email {email}: {str(e)}")
+    
     def save(self, employee: Employee) -> Employee:
         """직원 정보 저장"""
         logger.debug("Saving employee", id=employee.id, name=employee.name)
@@ -98,12 +117,12 @@ class EmployeeRepository(Repository[Employee]):
             # 삽입
             query = """
                 INSERT INTO employees 
-                (id, name, department, position, email, phone, signature, bank_name, account_number)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                (id, name, email, department, position, phone, signature, stamp, bank_name, account_number)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             params = (
-                employee.id, employee.name, employee.department, employee.position,
-                employee.email, employee.phone, employee.signature, employee.bank_name, employee.account_number
+                employee.id, employee.name, employee.email, employee.department, employee.position,
+                employee.phone, employee.signature, employee.stamp, employee.bank_name, employee.account_number
             )
             try:
                 self.db.execute_query(query, params)

@@ -43,6 +43,9 @@ class TestDocumentFlow(unittest.TestCase):
         
         # 의존성 주입 컨테이너 초기화
         cls.container = DIContainer(cls.config)
+        
+        # 테이블 드롭 및 재생성
+        cls.recreate_research_table()
     
     @classmethod
     def _create_test_tables(cls):
@@ -148,6 +151,9 @@ class TestDocumentFlow(unittest.TestCase):
             # except Exception as e:
             #     print(f"Error deleting temporary directory: {str(e)}")
             print("Test cleanup completed - Temporary directory preserved for inspection")
+            
+            # 테스트 데이터 정리
+            cls.clean_test_data()
     
     @classmethod
     def _drop_test_tables(cls):
@@ -189,6 +195,181 @@ class TestDocumentFlow(unittest.TestCase):
         
         print("Table drop functionality is disabled to avoid issues")
     
+    @classmethod
+    def recreate_research_table(cls):
+        """research_projects 테이블 재생성"""
+        print("연구 과제 테이블 재생성 중...")
+        
+        # DB 연결 설정
+        db_config = {
+            "host": "db",
+            "port": 5432,
+            "user": "myuser",
+            "password": "mypassword",
+            "database": "mydb"
+        }
+        
+        # PostgreSQL 연결
+        conn = None
+        
+        try:
+            conn = psycopg2.connect(**db_config)
+            conn.autocommit = True  # 자동 커밋 활성화
+            cursor = conn.cursor()
+            
+            # 1. 기존 테이블이 있는지 확인
+            cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'research_projects')")
+            table_exists = cursor.fetchone()[0]
+            
+            # 2. 기존 researches 테이블 백업 (선택사항)
+            if table_exists:
+                print("기존 research_projects 테이블 백업 중...")
+                cursor.execute("""
+                CREATE TABLE IF NOT EXISTS research_projects_backup AS 
+                SELECT * FROM research_projects
+                """)
+            
+            # 3. 기존 테이블 드롭
+            print("research_projects 테이블 삭제 중...")
+            cursor.execute("DROP TABLE IF EXISTS research_projects")
+       
+            
+            # 5. 새 테이블 생성
+            print("research_projects 테이블 생성 중...")
+            cursor.execute("""
+            CREATE TABLE research_projects (
+                id VARCHAR(50) PRIMARY KEY,
+                project_name VARCHAR(100) NOT NULL,
+                project_code VARCHAR(50) NOT NULL UNIQUE,
+                project_period VARCHAR(100),
+                project_manager VARCHAR(100),
+                project_manager_phone VARCHAR(30)
+            )
+            """)
+            
+            print("연구 과제 테이블 재생성 완료")
+            
+        except Exception as e:
+            print(f"테이블 재생성 중 오류 발생: {str(e)}")
+            if conn:
+                conn.rollback()
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+    
+    @classmethod
+    def migrate_research_table(cls):
+        """research 테이블 마이그레이션"""
+        print("연구 과제 테이블 마이그레이션 중...")
+        
+        # DB 연결 설정
+        db_config = {
+            "host": "db",
+            "port": 5432,
+            "user": "myuser",
+            "password": "mypassword",
+            "database": "mydb"
+        }
+        
+        import psycopg2
+        conn = None
+        
+        try:
+            conn = psycopg2.connect(**db_config)
+            conn.autocommit = True
+            cursor = conn.cursor()
+            
+            # 1. 새 테이블 생성
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS research_projects (
+                id VARCHAR(50) PRIMARY KEY,
+                project_name VARCHAR(100) NOT NULL,
+                project_code VARCHAR(50) NOT NULL UNIQUE,
+                project_period VARCHAR(100),
+                project_manager VARCHAR(100),
+                project_manager_phone VARCHAR(30)
+            )
+            """)
+            
+            # 2. 기존 researches 테이블이 있는지 확인
+            cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'researches')")
+            old_table_exists = cursor.fetchone()[0]
+            
+            # 3. 데이터 이관 (기존 테이블이 있는 경우)
+            if old_table_exists:
+                print("기존 테이블 데이터 이관 중...")
+                cursor.execute("""
+                INSERT INTO research_projects (id, project_name, project_code, project_period, project_manager, project_manager_phone)
+                SELECT id, project_name, project_code, project_period, project_manager, project_manager_phone
+                FROM researches
+                ON CONFLICT (id) DO NOTHING
+                """)
+                
+                # 4. 중복 데이터 정리
+                print("테스트 데이터 정리 중...")
+                cursor.execute("DELETE FROM research_projects WHERE id LIKE '%TEST%'")
+            
+            print("연구 과제 테이블 마이그레이션 완료")
+            
+        except Exception as e:
+            print(f"마이그레이션 중 오류 발생: {str(e)}")
+            if conn:
+                conn.rollback()
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+    
+    @classmethod
+    def clean_test_data(cls):
+        """테스트 데이터 정리"""
+        print("테스트 데이터 정리 중...")
+        
+        # DB 연결 설정
+        db_config = {
+            "host": "db",
+            "port": 5432,
+            "user": "myuser",
+            "password": "mypassword",
+            "database": "mydb"
+        }
+        
+        import psycopg2
+        conn = None
+        
+        try:
+            conn = psycopg2.connect(**db_config)
+            conn.autocommit = True
+            cursor = conn.cursor()
+            
+            # 테스트 데이터 삭제
+            tables = [
+                "companies", 
+                "employees", 
+                "research_projects", 
+                "experts",
+            ]
+            
+            for table in tables:
+                try:
+                    cursor.execute(f"DELETE FROM {table} WHERE id LIKE '%TEST%'")
+                    print(f"{table} 테이블 테스트 데이터 삭제 완료")
+                except Exception as e:
+                    print(f"{table} 테이블 정리 중 오류: {str(e)}")
+            
+            print("테스트 데이터 정리 완료")
+            
+        except Exception as e:
+            print(f"데이터 정리 중 오류 발생: {str(e)}")
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+    
     def setUp(self):
         """테스트 설정"""
         # 문서 서비스 가져오기
@@ -228,10 +409,9 @@ class TestDocumentFlow(unittest.TestCase):
         
         # 연구 과제 정보 저장
         research = Research(
-            id="PROJ-TEST-001",
-            project_name="통합테스트 프로젝트",
-            project_period="2023-01-01 ~ 2023-12-31",
-            project_manager="박통합"
+            id="RESEARCH-TEST-001",
+            project_name="통합테스트 연구과제",
+            project_code="R2023-001"  # 필수 파라미터 추가
         )
         self.container.research_repo.save(research)
     
@@ -295,7 +475,7 @@ class TestDocumentFlow(unittest.TestCase):
                 "date_issued": "2023-05-20"
             },
             "research_project_info": {
-                "project_id": "PROJ-TEST-001"
+                "project_id": "RESEARCH-TEST-001"
             },
             "travel_list": [
                 {
@@ -317,6 +497,440 @@ class TestDocumentFlow(unittest.TestCase):
         
         # PDF 저장
         output_path = os.path.join(self.output_dir, "test_travel.pdf")
+        saved_path = self.document_service.save_pdf(result["pdf"], output_path)
+        
+        # 파일 존재 확인
+        self.assertTrue(os.path.exists(saved_path))
+        self.assertTrue(os.path.getsize(saved_path) > 0)
+
+    def test_trading_statement_document_flow(self):
+        """거래명세서 생성 흐름 테스트"""
+        # 테스트 데이터
+        trading_data = {
+            "document_type": "거래명세서",
+            "metadata": {
+                "document_number": "TR-TEST-001",
+                "date_issued": "2023-05-20",
+                "receiver": "수신자"
+            },
+            "supplier_info": {
+                "company_id": "COMP-TEST-001"
+            },
+            "customer_info": {
+                "company_id": "COMP-TEST-001",
+                "company_name": "통합테스트 주식회사"
+            },
+            "item_list": [
+                {
+                    "name": "거래 상품1",
+                    "spec": "규격A",
+                    "quantity": 3,
+                    "unit_price": 40000,
+                    "amount": 120000,
+                    "vat": 12000
+                },
+                {
+                    "name": "거래 상품2",
+                    "spec": "규격B",
+                    "quantity": 2,
+                    "unit_price": 25000,
+                    "amount": 50000,
+                    "vat": 5000
+                }
+            ],
+            "amount_summary": {
+                "supply_sum": 170000,
+                "vat_sum": 17000,
+                "grand_total": 187000
+            }
+        }
+        
+        # 문서 생성
+        result = self.document_service.create_document(trading_data)
+        
+        # 검증
+        self.assertEqual(result["document_type"], "거래명세서")
+        self.assertIn("<html", result["html"])
+        self.assertIsInstance(result["pdf"], bytes)
+        
+        # PDF 저장
+        output_path = os.path.join(self.output_dir, "test_trading_statement.pdf")
+        saved_path = self.document_service.save_pdf(result["pdf"], output_path)
+        
+        # 파일 존재 확인
+        self.assertTrue(os.path.exists(saved_path))
+        self.assertTrue(os.path.getsize(saved_path) > 0)
+    
+    def test_travel_expense_document_flow(self):
+        """출장정산신청서 생성 흐름 테스트"""
+        # 테스트 데이터
+        expense_data = {
+            "document_type": "출장정산신청서",
+            "metadata": {
+                "document_number": "EXP-TEST-001",
+                "date_issued": "2023-06-25",
+                "reference": "TRAVEL-TEST-001"
+            },
+            "research_project_info": {
+                "project_id": "RESEARCH-TEST-001"
+            },
+            "travel_info": {
+                "employee_id": "EMP-TEST-001",
+                "duration": "2023-06-01 ~ 2023-06-03",
+                "destination": "서울",
+                "purpose": "업무 미팅"
+            },
+            "expense_list": [
+                {
+                    "date": "2023-06-01",
+                    "category": "교통비",
+                    "detail": "KTX 왕복",
+                    "amount": 120000,
+                    "receipt": "receipt1.jpg"
+                },
+                {
+                    "date": "2023-06-01~03",
+                    "category": "숙박비",
+                    "detail": "호텔 2박",
+                    "amount": 200000,
+                    "receipt": "receipt2.jpg"
+                }
+            ],
+            "amount_summary": {
+                "advance_payment": 300000,
+                "total_expense": 320000,
+                "balance": -20000
+            }
+        }
+        
+        # 문서 생성
+        result = self.document_service.create_document(expense_data)
+        
+        # 검증
+        self.assertEqual(result["document_type"], "출장정산신청서")
+        self.assertIn("<html", result["html"])
+        self.assertIsInstance(result["pdf"], bytes)
+        
+        # PDF 저장
+        output_path = os.path.join(self.output_dir, "test_travel_expense.pdf")
+        saved_path = self.document_service.save_pdf(result["pdf"], output_path)
+        
+        # 파일 존재 확인
+        self.assertTrue(os.path.exists(saved_path))
+        self.assertTrue(os.path.getsize(saved_path) > 0)
+    
+    def test_meeting_expense_document_flow(self):
+        """회의비사용신청서 생성 흐름 테스트"""
+        # 테스트 데이터
+        meeting_expense_data = {
+            "document_type": "회의비사용신청서",
+            "metadata": {
+                "document_number": "ME-TEST-001",
+                "date_issued": "2023-07-05"
+            },
+            "research_project_info": {
+                "project_id": "RESEARCH-TEST-001"
+            },
+            "meeting_info": {
+                "date": "2023-07-04 14:00~16:00",
+                "place": "회의실 A",
+                "purpose": "프로젝트 진행상황 검토",
+                "participants": "이통합, 김개발, 박디자인"
+            },
+            "expense_info": {
+                "expense_type": "식비",
+                "amount": 120000,
+                "payment_method": "법인카드"
+            },
+            "applicant_info": {
+                "apply_date": "2023-07-05",
+                "email": "test@example.com"
+            }
+        }
+        
+        # 문서 생성
+        result = self.document_service.create_document(meeting_expense_data)
+        
+        # 검증
+        self.assertEqual(result["document_type"], "회의비사용신청서")
+        self.assertIn("<html", result["html"])
+        self.assertIsInstance(result["pdf"], bytes)
+        
+        # PDF 저장
+        output_path = os.path.join(self.output_dir, "test_meeting_expense.pdf")
+        saved_path = self.document_service.save_pdf(result["pdf"], output_path)
+        
+        # 파일 존재 확인
+        self.assertTrue(os.path.exists(saved_path))
+        self.assertTrue(os.path.getsize(saved_path) > 0)
+    
+    def test_meeting_minutes_document_flow(self):
+        """회의록 생성 흐름 테스트"""
+        # 테스트 데이터
+        minutes_data = {
+            "document_type": "회의록",
+            "metadata": {
+                "document_number": "MM-TEST-001",
+                "date_issued": "2023-07-05"
+            },
+            "research_project_info": {
+                "project_id": "RESEARCH-TEST-001"
+            },
+            "meeting_info": {
+                "title": "7월 정기 회의",
+                "date": "2023-07-04 14:00~16:00",
+                "place": "회의실 A",
+                "participants": "이통합(PM), 김개발(개발), 박디자인(디자인)"
+            },
+            "meeting_content": {
+                "agenda": "1. 전월 진행상황 점검\n2. 이슈 사항 논의\n3. 향후 일정 계획",
+                "discussion": "- 전월 계획된 모듈 개발이 완료됨\n- 테스트 과정에서 성능 이슈 발견\n- 고객사 요구사항 일부 변경 필요",
+                "conclusion": "성능 이슈 해결 후 고객사와 요구사항 변경 협의 진행하기로 결정",
+                "action_items": "1. 김개발: 성능 최적화 진행 (7/15까지)\n2. 이통합: 고객사 미팅 일정 조율 (7/10까지)"
+            },
+            "writer_info": {
+                "email": "test@example.com",
+                "name": "이통합",
+                "position": "PM",
+                "department": "개발팀"
+            }
+        }
+        
+        # 문서 생성
+        result = self.document_service.create_document(minutes_data)
+        
+        # 검증
+        self.assertEqual(result["document_type"], "회의록")
+        self.assertIn("<html", result["html"])
+        self.assertIsInstance(result["pdf"], bytes)
+        
+        # PDF 저장
+        output_path = os.path.join(self.output_dir, "test_meeting_minutes.pdf")
+        saved_path = self.document_service.save_pdf(result["pdf"], output_path)
+        
+        # 파일 존재 확인
+        self.assertTrue(os.path.exists(saved_path))
+        self.assertTrue(os.path.getsize(saved_path) > 0)
+    
+    def test_purchase_order_document_flow(self):
+        """구매의뢰서 생성 흐름 테스트"""
+        # 테스트 데이터
+        purchase_data = {
+            "document_type": "구매의뢰서",
+            "metadata": {
+                "document_number": "PO-TEST-001",
+                "date_issued": "2023-07-10"
+            },
+            "research_project_info": {
+                "project_id": "RESEARCH-TEST-001"
+            },
+            "purchase_reason": "프로젝트 개발 환경 구축",
+            "item_list": [
+                {
+                    "name": "개발용 노트북",
+                    "spec": "i7, 16GB RAM, 512GB SSD",
+                    "quantity": 2,
+                    "unit_price": 1500000,
+                    "amount": 3000000,
+                    "purpose": "개발자 작업용"
+                },
+                {
+                    "name": "모니터",
+                    "spec": "27인치 4K",
+                    "quantity": 2,
+                    "unit_price": 500000,
+                    "amount": 1000000,
+                    "purpose": "개발 환경용"
+                }
+            ],
+            "amount_summary": {
+                "supply_sum": 4000000,
+                "vat_sum": 400000,
+                "grand_total": 4400000
+            },
+            "applicant_info": {
+                "apply_date": "2023-07-10",
+                "email": "test@example.com"
+            }
+        }
+        
+        # 문서 생성
+        result = self.document_service.create_document(purchase_data)
+        
+        # 검증
+        self.assertEqual(result["document_type"], "구매의뢰서")
+        self.assertIn("<html", result["html"])
+        self.assertIsInstance(result["pdf"], bytes)
+        
+        # PDF 저장
+        output_path = os.path.join(self.output_dir, "test_purchase_order.pdf")
+        saved_path = self.document_service.save_pdf(result["pdf"], output_path)
+        
+        # 파일 존재 확인
+        self.assertTrue(os.path.exists(saved_path))
+        self.assertTrue(os.path.getsize(saved_path) > 0)
+    
+    def test_expert_plan_document_flow(self):
+        """전문가활용계획서 생성 흐름 테스트"""
+        # 테스트 데이터
+        expert_plan_data = {
+            "document_type": "전문가활용계획서",
+            "metadata": {
+                "document_number": "EP-TEST-001",
+                "date_issued": "2023-07-15"
+            },
+            "research_project_info": {
+                "project_id": "RESEARCH-TEST-001"
+            },
+            "expert_info": {
+                "expert_id": "EXP-001",
+                "name": "김전문",
+                "affiliation": "서울대학교",
+                "position": "교수",
+                "dob": "1970-05-15",
+                "email": "expert@example.com",
+                "phone": "010-1234-5678",
+                "address": "서울시 관악구"
+            },
+            "util_plan": {
+                "start_date": "2023-08-01",
+                "end_date": "2023-08-31",
+                "purpose": "딥러닝 모델 설계 자문",
+                "content": "프로젝트 데이터 분석 및 모델 아키텍처 검토",
+                "fee": 1500000
+            },
+            "applicant_info": {
+                "apply_date": "2023-07-15",
+                "email": "test@example.com"
+            }
+        }
+        
+        # 문서 생성
+        result = self.document_service.create_document(expert_plan_data)
+        
+        # 검증
+        self.assertEqual(result["document_type"], "전문가활용계획서")
+        self.assertIn("<html", result["html"])
+        self.assertIsInstance(result["pdf"], bytes)
+        
+        # PDF 저장
+        output_path = os.path.join(self.output_dir, "test_expert_plan.pdf")
+        saved_path = self.document_service.save_pdf(result["pdf"], output_path)
+        
+        # 파일 존재 확인
+        self.assertTrue(os.path.exists(saved_path))
+        self.assertTrue(os.path.getsize(saved_path) > 0)
+    
+    def test_expert_confirm_document_flow(self):
+        """전문가자문확인서 생성 흐름 테스트"""
+        # 테스트 데이터
+        expert_confirm_data = {
+            "document_type": "전문가자문확인서",
+            "metadata": {
+                "document_number": "EC-TEST-001",
+                "date_issued": "2023-08-31"
+            },
+            "research_project_info": {
+                "project_id": "RESEARCH-TEST-001"
+            },
+            "expert_info": {
+                "expert_id": "EXP-001",
+                "name": "김전문",
+                "affiliation": "서울대학교",
+                "position": "교수",
+                "dob": "1970-05-15",
+                "email": "expert@example.com",
+                "phone": "010-1234-5678",
+                "address": "서울시 관악구"
+            },
+            "consult_result": {
+                "date": "2023-08-15",
+                "place": "서울대학교 연구실",
+                "method": "대면 회의",
+                "content": "1. 데이터 전처리 방법 검토\n2. 모델 아키텍처 최적화 방안 제시\n3. 성능 평가 지표 선정",
+                "fee": 1500000
+            },
+            "applicant_info": {
+                "apply_date": "2023-08-31",
+                "email": "test@example.com"
+            }
+        }
+        
+        # 문서 생성
+        result = self.document_service.create_document(expert_confirm_data)
+        
+        # 검증
+        self.assertEqual(result["document_type"], "전문가자문확인서")
+        self.assertIn("<html", result["html"])
+        self.assertIsInstance(result["pdf"], bytes)
+        
+        # PDF 저장
+        output_path = os.path.join(self.output_dir, "test_expert_confirm.pdf")
+        saved_path = self.document_service.save_pdf(result["pdf"], output_path)
+        
+        # 파일 존재 확인
+        self.assertTrue(os.path.exists(saved_path))
+        self.assertTrue(os.path.getsize(saved_path) > 0)
+    
+    def test_expenditure_document_flow(self):
+        """지출결의서 생성 흐름 테스트"""
+        # 테스트 데이터
+        expenditure_data = {
+            "document_type": "지출결의서",
+            "metadata": {
+                "document_number": "EX-TEST-001",
+                "date_issued": "2023-09-05",
+                "writer": "이통합",
+                "department": "개발팀",
+                "purpose": "프로젝트 장비 구매 비용"
+            },
+            "research_project_info": {
+                "project_id": "RESEARCH-TEST-001"
+            },
+            "expense_list": [
+                {
+                    "item_name": "노트북 구매",
+                    "amount": 3000000,
+                    "memo": "인보이스 #INV-001"
+                },
+                {
+                    "item_name": "모니터 구매",
+                    "amount": 1000000,
+                    "memo": "인보이스 #INV-002"
+                }
+            ],
+            "amount_summary": {
+                "supply_sum": 4000000,
+                "vat_sum": 400000,
+                "grand_total": 4400000,
+                "total_in_korean": "사백사십만원정"
+            },
+            "applicant_info": {
+                "apply_date": "2023-09-05",
+                "email": "test@example.com"
+            },
+            "approval_list": [
+                {
+                    "email": "boss@example.com",
+                    "name": "김부장",
+                    "position": "부장",
+                    "department": "개발팀",
+                    "approval_status": "승인",
+                    "approval_date": "2023-09-06"
+                }
+            ]
+        }
+        
+        # 문서 생성
+        result = self.document_service.create_document(expenditure_data)
+        
+        # 검증
+        self.assertEqual(result["document_type"], "지출결의서")
+        self.assertIn("<html", result["html"])
+        self.assertIsInstance(result["pdf"], bytes)
+        
+        # PDF 저장
+        output_path = os.path.join(self.output_dir, "test_expenditure.pdf")
         saved_path = self.document_service.save_pdf(result["pdf"], output_path)
         
         # 파일 존재 확인

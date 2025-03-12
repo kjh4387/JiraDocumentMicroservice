@@ -80,12 +80,13 @@ class ResearchRepository(Repository[Research]):
             # 업데이트
             query = """
                 UPDATE research_projects 
-                SET project_name = %s, project_period = %s, project_manager = %s, project_code = %s
+                SET project_name = %s, project_code = %s, project_period = %s, 
+                    project_manager = %s, project_manager_phone = %s
                 WHERE id = %s
             """
             params = (
-                research.project_name, research.project_period, 
-                research.project_manager, research.project_code,
+                research.project_name, research.project_code, research.project_period,
+                research.project_manager, research.project_manager_phone,
                 research.id
             )
             try:
@@ -98,12 +99,12 @@ class ResearchRepository(Repository[Research]):
             # 삽입
             query = """
                 INSERT INTO research_projects 
-                (id, project_name, project_period, project_manager, project_code)
-                VALUES (%s, %s, %s, %s, %s)
+                (id, project_name, project_code, project_period, project_manager, project_manager_phone)
+                VALUES (%s, %s, %s, %s, %s, %s)
             """
             params = (
-                research.id, research.project_name, research.project_period,
-                research.project_manager, research.project_code
+                research.id, research.project_name, research.project_code, research.project_period,
+                research.project_manager, research.project_manager_phone
             )
             try:
                 self.db.execute_query(query, params)
@@ -133,3 +134,22 @@ class ResearchRepository(Repository[Research]):
         except Exception as e:
             logger.error("Database error while deleting research project", id=id, error=str(e))
             raise DatabaseError(f"Failed to delete research project {id}: {str(e)}")
+
+    def find_by_project_code(self, project_code: str) -> Optional[Research]:
+        """프로젝트 코드로 연구 과제 조회"""
+        logger.debug("Finding research by project code", project_code=project_code)
+        query = "SELECT * FROM research_projects WHERE project_code = %s"
+        
+        try:
+            result = self.db.execute_query(query, (project_code,))
+            
+            if not result:
+                logger.warning("Research project not found", project_code=project_code)
+                return None
+            
+            research = Research(**result[0])
+            logger.debug("Research project found", id=research.id, project_name=research.project_name)
+            return research
+        except Exception as e:
+            logger.error("Database error while finding research by project code", project_code=project_code, error=str(e))
+            raise DatabaseError(f"Failed to find research with project code {project_code}: {str(e)}")
