@@ -100,12 +100,12 @@ class EmployeeRepository(Repository[Employee]):
             query = """
                 UPDATE employees 
                 SET name = %s, department = %s, position = %s, email = %s,
-                    phone = %s, signature = %s, bank_name = %s, account_number = %s
+                    phone = %s, signature = %s, stamp = %s, bank_name = %s, account_number = %s
                 WHERE id = %s
             """
             params = (
                 employee.name, employee.department, employee.position, employee.email,
-                employee.phone, employee.signature, employee.bank_name, employee.account_number, employee.id
+                employee.phone, employee.signature, employee.stamp, employee.bank_name, employee.account_number, employee.id
             )
             try:
                 self.db.execute_query(query, params)

@@ -72,12 +72,12 @@
     "customer_info": {
       "type": "object",
       "properties": {
-        "company_id": {
+        "company_name": {
           "type": "string",
-          "description": "고객 회사 ID"
+          "description": "고객 회사 이름"
         }
       },
-      "required": ["company_id"]
+      "required": ["company_name"]
     },
     "ResearchProjectInfo": {
       "type": "object",
@@ -116,9 +116,9 @@
         "supplier_info": {
           "type": "object",
           "properties": {
-            "company_id": {
+            "company_name": {
               "type": "string",
-              "description": "공급자 회사 ID"
+              "description": "공급자 회사 이름"
             }
           }
         },
@@ -159,9 +159,9 @@
         "supplier_info": {
           "type": "object",
           "properties": {
-            "company_id": {
+            "company_name": {
               "type": "string",
-              "description": "공급자 회사 ID"
+              "description": "공급자 회사 이름"
             }
           }
         },
@@ -245,7 +245,7 @@
           "items": {
             "type": "object",
             "properties": {
-              "employee_id": {
+              "email": {
                 "type": "string",
                 "description": "출장자 ID"
               },
@@ -306,9 +306,9 @@
         "traveler": {
           "type": "object",
           "properties": {
-            "employee_id": {
+            "email": {
               "type": "string",
-              "description": "출장자 ID"
+              "description": "출장자 email"
             }
           }
         },
@@ -743,13 +743,9 @@
               "type": "string",
               "description": "작성 일자"
             },
-            "applicant_id": {
+            "employee_id": {
               "type": "string",
               "description": "신청인 ID (Employee 참조)"
-            },
-            "stamp": {
-              "type": "string",
-              "description": "직인(필요시 DB enrichment를 통해 조회)"
             }
           }
         }

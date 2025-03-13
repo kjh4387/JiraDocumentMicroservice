@@ -44,8 +44,6 @@ class TestDocumentFlow(unittest.TestCase):
         # 의존성 주입 컨테이너 초기화
         cls.container = DIContainer(cls.config)
         
-        # 테이블 드롭 및 재생성
-        cls.recreate_research_table()
     
     @classmethod
     def _create_test_tables(cls):
@@ -91,6 +89,7 @@ class TestDocumentFlow(unittest.TestCase):
                     email VARCHAR(100) NOT NULL,
                     phone VARCHAR(20) NOT NULL,
                     signature VARCHAR(100),
+                    stamp VARCHAR(100),
                     bank_name VARCHAR(50),
                     account_number VARCHAR(50)
                 )
@@ -127,201 +126,6 @@ class TestDocumentFlow(unittest.TestCase):
                 except Exception as e:
                     print(f"Error closing database connection: {str(e)}")
     
-    @classmethod
-    def tearDownClass(cls):
-        """테스트 클래스 정리"""
-        try:
-            # 테이블 드롭 로직 주석 처리 (문제 발생 방지)
-            # cls._drop_test_tables()
-            print("Table drop skipped to avoid issues")
-        except Exception as e:
-            print(f"Error during tearDown: {str(e)}")
-        finally:
-            # 임시 디렉토리를 삭제하지 않고 경로 출력
-            print(f"==================== 출력 파일 경로 ====================")
-            print(f"테스트 파일 디렉토리: {cls.temp_dir}")
-            print(f"견적서 PDF 파일: {os.path.join(cls.output_dir, 'test_estimate.pdf')}")
-            print(f"출장신청서 PDF 파일: {os.path.join(cls.output_dir, 'test_travel.pdf')}")
-            print(f"======================================================")
-            
-            # 임시 디렉토리 삭제 코드 주석 처리
-            # try:
-            #     shutil.rmtree(cls.temp_dir)
-            #     print(f"Temporary directory {cls.temp_dir} deleted")
-            # except Exception as e:
-            #     print(f"Error deleting temporary directory: {str(e)}")
-            print("Test cleanup completed - Temporary directory preserved for inspection")
-            
-            # 테스트 데이터 정리
-            cls.clean_test_data()
-    
-    @classmethod
-    def _drop_test_tables(cls):
-        """테스트 테이블 삭제 - 현재 비활성화됨"""
-        print("Dropping test tables... (DISABLED)")
-        # db_config = cls.config["database"]
-        
-        # conn = None
-        # try:
-        #     # DB 연결
-        #     conn = psycopg2.connect(
-        #         host=db_config["host"],
-        #         port=db_config["port"],
-        #         user=db_config["user"],
-        #         password=db_config["password"],
-        #         database=db_config["database"]
-        #     )
-        #     conn.autocommit = True
-        #     cursor = conn.cursor()
-            
-        #     # 테이블 삭제
-        #     cursor.execute("DROP TABLE IF EXISTS companies")
-        #     cursor.execute("DROP TABLE IF EXISTS employees")
-        #     cursor.execute("DROP TABLE IF EXISTS research_projects")
-            
-        #     # 커서 닫기
-        #     cursor.close()
-        #     print("Test tables dropped successfully")
-        # except Exception as e:
-        #     print(f"Error dropping test tables: {str(e)}")
-        # finally:
-        #     # 연결이 있으면 항상 닫기
-        #     if conn:
-        #         try:
-        #             conn.close()
-        #             print("Database connection closed")
-        #         except Exception as e:
-        #             print(f"Error closing database connection: {str(e)}")
-        
-        print("Table drop functionality is disabled to avoid issues")
-    
-    @classmethod
-    def recreate_research_table(cls):
-        """research_projects 테이블 재생성"""
-        print("연구 과제 테이블 재생성 중...")
-        
-        # DB 연결 설정
-        db_config = {
-            "host": "db",
-            "port": 5432,
-            "user": "myuser",
-            "password": "mypassword",
-            "database": "mydb"
-        }
-        
-        # PostgreSQL 연결
-        conn = None
-        
-        try:
-            conn = psycopg2.connect(**db_config)
-            conn.autocommit = True  # 자동 커밋 활성화
-            cursor = conn.cursor()
-            
-            # 1. 기존 테이블이 있는지 확인
-            cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'research_projects')")
-            table_exists = cursor.fetchone()[0]
-            
-            # 2. 기존 researches 테이블 백업 (선택사항)
-            if table_exists:
-                print("기존 research_projects 테이블 백업 중...")
-                cursor.execute("""
-                CREATE TABLE IF NOT EXISTS research_projects_backup AS 
-                SELECT * FROM research_projects
-                """)
-            
-            # 3. 기존 테이블 드롭
-            print("research_projects 테이블 삭제 중...")
-            cursor.execute("DROP TABLE IF EXISTS research_projects")
-       
-            
-            # 5. 새 테이블 생성
-            print("research_projects 테이블 생성 중...")
-            cursor.execute("""
-            CREATE TABLE research_projects (
-                id VARCHAR(50) PRIMARY KEY,
-                project_name VARCHAR(100) NOT NULL,
-                project_code VARCHAR(50) NOT NULL UNIQUE,
-                project_period VARCHAR(100),
-                project_manager VARCHAR(100),
-                project_manager_phone VARCHAR(30)
-            )
-            """)
-            
-            print("연구 과제 테이블 재생성 완료")
-            
-        except Exception as e:
-            print(f"테이블 재생성 중 오류 발생: {str(e)}")
-            if conn:
-                conn.rollback()
-        finally:
-            if cursor:
-                cursor.close()
-            if conn:
-                conn.close()
-    
-    @classmethod
-    def migrate_research_table(cls):
-        """research 테이블 마이그레이션"""
-        print("연구 과제 테이블 마이그레이션 중...")
-        
-        # DB 연결 설정
-        db_config = {
-            "host": "db",
-            "port": 5432,
-            "user": "myuser",
-            "password": "mypassword",
-            "database": "mydb"
-        }
-        
-        import psycopg2
-        conn = None
-        
-        try:
-            conn = psycopg2.connect(**db_config)
-            conn.autocommit = True
-            cursor = conn.cursor()
-            
-            # 1. 새 테이블 생성
-            cursor.execute("""
-            CREATE TABLE IF NOT EXISTS research_projects (
-                id VARCHAR(50) PRIMARY KEY,
-                project_name VARCHAR(100) NOT NULL,
-                project_code VARCHAR(50) NOT NULL UNIQUE,
-                project_period VARCHAR(100),
-                project_manager VARCHAR(100),
-                project_manager_phone VARCHAR(30)
-            )
-            """)
-            
-            # 2. 기존 researches 테이블이 있는지 확인
-            cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'researches')")
-            old_table_exists = cursor.fetchone()[0]
-            
-            # 3. 데이터 이관 (기존 테이블이 있는 경우)
-            if old_table_exists:
-                print("기존 테이블 데이터 이관 중...")
-                cursor.execute("""
-                INSERT INTO research_projects (id, project_name, project_code, project_period, project_manager, project_manager_phone)
-                SELECT id, project_name, project_code, project_period, project_manager, project_manager_phone
-                FROM researches
-                ON CONFLICT (id) DO NOTHING
-                """)
-                
-                # 4. 중복 데이터 정리
-                print("테스트 데이터 정리 중...")
-                cursor.execute("DELETE FROM research_projects WHERE id LIKE '%TEST%'")
-            
-            print("연구 과제 테이블 마이그레이션 완료")
-            
-        except Exception as e:
-            print(f"마이그레이션 중 오류 발생: {str(e)}")
-            if conn:
-                conn.rollback()
-        finally:
-            if cursor:
-                cursor.close()
-            if conn:
-                conn.close()
     
     @classmethod
     def clean_test_data(cls):
@@ -403,7 +207,9 @@ class TestDocumentFlow(unittest.TestCase):
             email="test@example.com",
             phone="010-1234-5678",
             bank_name="신한은행",
-            account_number="110-123-456789"
+            account_number="110-123-456789",
+            signature=None,
+            stamp=None,  # None으로 설정
         )
         self.container.employee_repo.save(employee)
         
@@ -937,5 +743,72 @@ class TestDocumentFlow(unittest.TestCase):
         self.assertTrue(os.path.exists(saved_path))
         self.assertTrue(os.path.getsize(saved_path) > 0)
 
+    @classmethod
+    def tearDownClass(cls):
+        """테스트 클래스 정리"""
+        try:
+            # 테이블 드롭 로직 주석 처리 (문제 발생 방지)
+            # cls._drop_test_tables()
+            print("Table drop skipped to avoid issues")
+        except Exception as e:
+            print(f"Error during tearDown: {str(e)}")
+        finally:
+            # 임시 디렉토리를 삭제하지 않고 경로 출력
+            print(f"==================== 출력 파일 경로 ====================")
+            print(f"테스트 파일 디렉토리: {cls.temp_dir}")
+            print(f"견적서 PDF 파일: {os.path.join(cls.output_dir, 'test_estimate.pdf')}")
+            print(f"출장신청서 PDF 파일: {os.path.join(cls.output_dir, 'test_travel.pdf')}")
+            print(f"======================================================")
+            
+            # 임시 디렉토리 삭제 코드 주석 처리
+            # try:
+            #     shutil.rmtree(cls.temp_dir)
+            #     print(f"Temporary directory {cls.temp_dir} deleted")
+            # except Exception as e:
+            #     print(f"Error deleting temporary directory: {str(e)}")
+            print("Test cleanup completed - Temporary directory preserved for inspection")
+            
+            # 테스트 데이터 정리
+            cls.clean_test_data()
+    
+    @classmethod
+    def _drop_test_tables(cls):
+        """테스트 테이블 삭제 - 현재 비활성화됨"""
+        print("Dropping test tables... (DISABLED)")
+        # db_config = cls.config["database"]
+        
+        # conn = None
+        # try:
+        #     # DB 연결
+        #     conn = psycopg2.connect(
+        #         host=db_config["host"],
+        #         port=db_config["port"],
+        #         user=db_config["user"],
+        #         password=db_config["password"],
+        #         database=db_config["database"]
+        #     )
+        #     conn.autocommit = True
+        #     cursor = conn.cursor()
+            
+        #     # 테이블 삭제
+        #     cursor.execute("DROP TABLE IF EXISTS companies")
+        #     cursor.execute("DROP TABLE IF EXISTS employees")
+        #     cursor.execute("DROP TABLE IF EXISTS research_projects")
+            
+        #     # 커서 닫기
+        #     cursor.close()
+        #     print("Test tables dropped successfully")
+        # except Exception as e:
+        #     print(f"Error dropping test tables: {str(e)}")
+        # finally:
+        #     # 연결이 있으면 항상 닫기
+        #     if conn:
+        #         try:
+        #             conn.close()
+        #             print("Database connection closed")
+        #         except Exception as e:
+        #             print(f"Error closing database connection: {str(e)}")
+        
+        print("Table drop functionality is disabled to avoid issues")
 if __name__ == '__main__':
     unittest.main()
