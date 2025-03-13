@@ -84,13 +84,13 @@ class CompanyRepository(Repository[Company]):
             # 업데이트
             query = """
                 UPDATE companies 
-                SET company_name = %s, biz_id = %s, rep_name = %s, address = %s,
-                    biz_type = %s, biz_item = %s, phone = %s, rep_stamp = %s
+                SET company_name = %s, biz_id = %s, email = %s, rep_name = %s, address = %s,
+                    biz_type = %s, biz_item = %s, phone = %s, fax = %s, rep_stamp = %s
                 WHERE id = %s
             """
             params = (
-                company.company_name, company.biz_id, company.rep_name, company.address,
-                company.biz_type, company.biz_item, company.phone, company.rep_stamp,
+                company.company_name, company.biz_id, company.email, company.rep_name, company.address,
+                company.biz_type, company.biz_item, company.phone, company.fax, company.rep_stamp,
                 company.id
             )
             try:
@@ -103,12 +103,12 @@ class CompanyRepository(Repository[Company]):
             # 삽입
             query = """
                 INSERT INTO companies 
-                (id, company_name, biz_id, rep_name, address, biz_type, biz_item, phone, rep_stamp)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                (id, company_name, biz_id, rep_name, address, biz_type, biz_item, phone, fax, rep_stamp)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             params = (
                 company.id, company.company_name, company.biz_id, company.rep_name, company.address,
-                company.biz_type, company.biz_item, company.phone, company.rep_stamp
+                company.biz_type, company.biz_item, company.phone, company.fax, company.rep_stamp
             )
             try:
                 self.db.execute_query(query, params)

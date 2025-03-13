@@ -81,13 +81,14 @@ class ResearchRepository(Repository[Research]):
             query = """
                 UPDATE research_projects 
                 SET project_name = %s, project_code = %s, project_period = %s, 
-                    project_manager = %s, project_manager_phone = %s
+                    project_manager = %s, project_start_date = %s, project_end_date = %s,
+                    budget = %s, status = %s, description = %s
                 WHERE id = %s
             """
             params = (
                 research.project_name, research.project_code, research.project_period,
-                research.project_manager, research.project_manager_phone,
-                research.id
+                research.project_manager, research.project_start_date, research.project_end_date,
+                research.budget, research.status, research.description, research.id
             )
             try:
                 self.db.execute_query(query, params)
@@ -98,13 +99,13 @@ class ResearchRepository(Repository[Research]):
         else:
             # 삽입
             query = """
-                INSERT INTO research_projects 
-                (id, project_name, project_code, project_period, project_manager, project_manager_phone)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                    INSERT INTO research_projects 
+                    (id, project_name, project_code, project_period, project_manager, project_start_date, project_end_date, budget, status, description)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             params = (
                 research.id, research.project_name, research.project_code, research.project_period,
-                research.project_manager, research.project_manager_phone
+                research.project_manager, research.project_start_date, research.project_end_date, research.budget, research.status, research.description
             )
             try:
                 self.db.execute_query(query, params)

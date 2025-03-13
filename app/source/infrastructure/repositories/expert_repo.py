@@ -80,13 +80,15 @@ class ExpertRepository(Repository[Expert]):
             # 업데이트
             query = """
                 UPDATE experts 
-                SET name = %s, affiliation = %s, position = %s, dob = %s,
-                    address = %s, classification = %s, email = %s, phone = %s
+                SET name = %s, affiliation = %s, position = %s, birth_date = %s,
+                    address = %s, email = %s, phone = %s,
+                    bank_name = %s, account_number = %s, specialty = %s, bio = %s
                 WHERE id = %s
             """
             params = (
-                expert.name, expert.affiliation, expert.position, expert.dob,
-                expert.address, expert.classification, expert.email, expert.phone,
+                expert.name, expert.affiliation, expert.position, expert.birth_date,
+                expert.address, expert.email, expert.phone,
+                expert.bank_name, expert.account_number, expert.specialty, expert.bio,
                 expert.id
             )
             try:
@@ -99,12 +101,13 @@ class ExpertRepository(Repository[Expert]):
             # 삽입
             query = """
                 INSERT INTO experts 
-                (id, name, affiliation, position, dob, address, classification, email, phone)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                (id, name, affiliation, position, birth_date, address, email, phone, bank_name, account_number, specialty, bio)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             params = (
-                expert.id, expert.name, expert.affiliation, expert.position, expert.dob,
-                expert.address, expert.classification, expert.email, expert.phone
+                expert.id, expert.name, expert.affiliation, expert.position, expert.birth_date,
+                expert.address, expert.email, expert.phone,
+                expert.bank_name, expert.account_number, expert.specialty, expert.bio
             )
             try:
                 self.db.execute_query(query, params)

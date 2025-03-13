@@ -204,14 +204,6 @@
           "type": "number",
           "description": "단가"
         },
-        "amount": {
-          "type": "number",
-          "description": "금액"
-        },
-        "vat": {
-          "type": "number",
-          "description": "부가세"
-        },
         "purpose": {
           "type": "string",
           "description": "용도"
@@ -221,7 +213,7 @@
           "description": "비고"
         }
       },
-      "required": ["name", "quantity", "unit_price", "amount"]
+      "required": ["name", "quantity", "unit_price"]
     },
     "ItemList": {
       "type": "array",
@@ -256,10 +248,6 @@
         "balance": {
           "type": "number",
           "description": "차액"
-        },
-        "total_in_korean": {
-          "type": "string",
-          "description": "금액 한글 표기"
         }
       }
     },
@@ -359,8 +347,7 @@
           "type": "string",
           "description": "비고"
         }
-      },
-      "required": ["amount"]
+      }
     },
     "MeetingInfo": {
       "type": "object",

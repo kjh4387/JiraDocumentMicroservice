@@ -100,12 +100,12 @@ class EmployeeRepository(Repository[Employee]):
             query = """
                 UPDATE employees 
                 SET name = %s, department = %s, position = %s, email = %s,
-                    phone = %s, signature = %s, stamp = %s, bank_name = %s, account_number = %s
+                    phone = %s, signature = %s, stamp = %s, bank_name = %s, account_number = %s, birth_date = %s, address = %s, fax = %s
                 WHERE id = %s
             """
             params = (
                 employee.name, employee.department, employee.position, employee.email,
-                employee.phone, employee.signature, employee.stamp, employee.bank_name, employee.account_number, employee.id
+                employee.phone, employee.signature, employee.stamp, employee.bank_name, employee.account_number, employee.birth_date, employee.address, employee.fax, employee.id
             )
             try:
                 self.db.execute_query(query, params)
@@ -117,12 +117,12 @@ class EmployeeRepository(Repository[Employee]):
             # 삽입
             query = """
                 INSERT INTO employees 
-                (id, name, email, department, position, phone, signature, stamp, bank_name, account_number)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                (id, name, email, department, position, phone, signature, stamp, bank_name, account_number, birth_date, address, fax)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             params = (
                 employee.id, employee.name, employee.email, employee.department, employee.position,
-                employee.phone, employee.signature, employee.stamp, employee.bank_name, employee.account_number
+                employee.phone, employee.signature, employee.stamp, employee.bank_name, employee.account_number, employee.birth_date, employee.address, employee.fax
             )
             try:
                 self.db.execute_query(query, params)

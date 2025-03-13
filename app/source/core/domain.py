@@ -10,11 +10,13 @@ class Company:
     id: str
     company_name: str
     biz_id: str
+    email: Optional[str] = None
     rep_name: Optional[str] = None
     address: Optional[str] = None
     biz_type: Optional[str] = None
     biz_item: Optional[str] = None
     phone: Optional[str] = None
+    fax: Optional[str] = None
     rep_stamp: Optional[str] = None
 
 @dataclass
@@ -30,6 +32,9 @@ class Employee:
     stamp: Optional[str] = None  # 추가된 필드: 직원의 직인 정보를 저장
     bank_name: Optional[str] = None
     account_number: Optional[str] = None
+    birth_date: Optional[date] = None
+    address: Optional[str] = None
+    fax: Optional[str] = None
 
 @dataclass
 class Research:
@@ -39,7 +44,11 @@ class Research:
     project_code: str
     project_period: Optional[str] = None
     project_manager: Optional[str] = None
-    project_manager_phone: Optional[str] = None
+    project_start_date: Optional[date] = None
+    project_end_date: Optional[date] = None
+    budget: Optional[int] = None
+    status: Optional[str] = None
+    description: Optional[str] = None
 
 @dataclass
 class DocumentSection:
@@ -64,8 +73,12 @@ class Expert:
     name: str
     affiliation: Optional[str] = None
     position: Optional[str] = None
-    dob: Optional[str] = None
+    birth_date: Optional[date] = None
     address: Optional[str] = None
     classification: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
+    bank_name: Optional[str] = None
+    account_number: Optional[str] = None
+    specialty: Optional[str] = None
+    bio: Optional[str] = None
