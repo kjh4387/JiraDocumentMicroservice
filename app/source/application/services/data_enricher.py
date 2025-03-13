@@ -1,4 +1,4 @@
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional, Callable, Tuple
 from app.source.core.interfaces import DataEnricher, Repository
 from app.source.core.domain import Company, Employee, Research, Expert
 from app.source.core.logging import get_logger
@@ -19,198 +19,252 @@ class DatabaseDataEnricher(DataEnricher):
         self.employee_repo = employee_repo
         self.research_repo = research_repo
         self.expert_repo = expert_repo
+        
+        # 도메인 객체별 조회 방법 정의
+        self.domain_resolvers = {
+            'company': self._resolve_company,
+            'employee': self._resolve_employee, 
+            'research': self._resolve_research,
+            'expert': self._resolve_expert
+        }
+        
+        # 키 패턴 정의 - 어떤 키가 어떤 도메인 객체를 참조하는지 매핑
+        self.key_patterns = {
+            # Company 관련 키
+            'company_id': 'company',
+            'company_name': 'company',
+            'supplier_info': 'company',
+            'customer_info': 'company',
+            
+            # Employee 관련 키
+            'employee_id': 'employee',
+            'email': 'employee',
+            'participants': 'employee_list',
+            'approval_list': 'employee_list',
+            'travel_list': 'employee_list',
+            'applicant_info': 'employee',
+            'writer_info': 'employee',
+            
+            # Research 관련 키
+            'project_id': 'research',
+            'project_code': 'research',
+            'research_project_info': 'research',
+            
+            # Expert 관련 키
+            'expert_id': 'expert',
+            'expert_info': 'expert'
+        }
+        
         logger.debug("DatabaseDataEnricher initialized")
     
     def enrich(self, document_type: str, data: Dict[str, Any]) -> Dict[str, Any]:
-        """문서 데이터 보강"""
+        """문서 데이터 보강 - 범용적인 방식으로 구현"""
         logger.debug("Enriching document data", document_type=document_type)
         
         # 데이터 복사본 생성
         enriched_data = data.copy()
         
-        # 문서 유형별 보강 로직
-        if document_type in ["견적서", "거래명세서"]:
-            self._enrich_supplier_info(enriched_data.get("supplier_info", {}))
-        
-        if document_type in ["출장신청서", "출장정산신청서", "회의비사용신청서", "회의록"]:
-            self._enrich_participants(enriched_data.get("participants", []))
-            self._enrich_research_project(enriched_data.get("research_project_info", {}))
-        
-        if document_type in ["전문가활용계획서", "전문가자문확인서"]:
-            self._enrich_expert_info(enriched_data.get("expert_info", {}))
-            self._enrich_research_project(enriched_data.get("research_project_info", {}))
-        
-        if "approval_list" in enriched_data:
-            self._enrich_approval_list(enriched_data["approval_list"])
+        # 데이터를 재귀적으로 순회하며 보강
+        self._enrich_recursive(enriched_data)
         
         logger.debug("Document data enriched successfully", document_type=document_type)
         return enriched_data
     
-    def _enrich_supplier_info(self, supplier_info: Dict[str, Any]) -> None:
-        """공급자 정보 보강"""
-        if not supplier_info:
-            return
+    def _enrich_recursive(self, data: Any, parent_key: str = None) -> None:
+        """데이터를 재귀적으로 순회하며 보강"""
+        # 딕셔너리인 경우
+        if isinstance(data, dict):
+            # 현재 딕셔너리에 대한 보강 처리
+            self._enrich_dict(data, parent_key)
             
-        logger.debug("Enriching supplier info")
+            # 중첩된 딕셔너리와 리스트에 대한 재귀 처리
+            for key, value in list(data.items()):
+                self._enrich_recursive(value, key)
+                
+        # 리스트인 경우
+        elif isinstance(data, list):
+            # 리스트의 각 항목에 대해 재귀 처리
+            for item in data:
+                self._enrich_recursive(item, parent_key)
+    
+    def _enrich_dict(self, data: Dict[str, Any], parent_key: str = None) -> None:
+        """딕셔너리 데이터 보강"""
+        # 키와 패턴 매칭 확인
+        for key in list(data.keys()):
+            if key in self.key_patterns:
+                domain_type = self.key_patterns[key]
+                
+                # 단일 객체 보강
+                if domain_type in self.domain_resolvers and not domain_type.endswith('_list'):
+                    self._enrich_single_entity(data, key, domain_type)
         
-        # 기존 ID 기반 조회 로직 (하위 호환성 유지)
-        if "company_id" in supplier_info:
-            company_id = supplier_info["company_id"]
-            company = self.company_repo.find_by_id(company_id)
+        # 전체 딕셔너리가 특정 도메인 객체를 나타내는 경우
+        if parent_key in self.key_patterns:
+            domain_type = self.key_patterns[parent_key]
             
+            # 리스트 객체 보강
+            if domain_type.endswith('_list'):
+                # 리스트 항목 각각을 보강할 필요는 없음 (재귀에서 처리됨)
+                pass
+            # 단일 객체이고 딕셔너리 자체가 객체 데이터인 경우
+            elif domain_type in self.domain_resolvers:
+                self._enrich_entity_dict(data, domain_type)
+    
+    def _enrich_single_entity(self, data: Dict[str, Any], key: str, domain_type: str) -> None:
+        """단일 ID 또는 이름 필드로 엔티티 조회 및 보강"""
+        # ID나 이름 같은 단일 값인 경우 (예: "company_id": "COMP-001")
+        if key in data and isinstance(data[key], str):
+            resolver = self.domain_resolvers[domain_type]
+            entity = resolver(data[key])
+            
+            if entity:
+                # 관련된 다른 키 존재 여부 확인 (예: company_id가 있으면 company_name 등도 설정)
+                self._update_related_fields(data, entity, key)
+    
+    def _enrich_entity_dict(self, data: Dict[str, Any], domain_type: str) -> None:
+        """엔티티를 나타내는 딕셔너리 보강"""
+        resolver = self.domain_resolvers[domain_type]
+        entity = None
+        
+        # 가능한 식별자 키 확인 (company_id, company_name, email 등)
+        identifying_keys = self._get_identifying_keys(domain_type)
+        
+        # 식별자 키 중 하나라도 있으면 엔티티 조회
+        for id_key in identifying_keys:
+            if id_key in data and data[id_key]:
+                entity = resolver(data[id_key])
+                if entity:
+                    # 엔티티 데이터로 딕셔너리 업데이트
+                    self._update_with_entity_data(data, entity, id_key)
+                    break
+    
+    def _get_identifying_keys(self, domain_type: str) -> List[str]:
+        """도메인 유형에 따른 식별자 키 목록 반환"""
+        if domain_type == 'company':
+            return ['company_id', 'company_name']
+        elif domain_type == 'employee':
+            return ['employee_id', 'email']
+        elif domain_type == 'research':
+            return ['project_id', 'project_code']
+        elif domain_type == 'expert':
+            return ['expert_id']
+        return []
+    
+    def _update_with_entity_data(self, data: Dict[str, Any], entity: Any, used_key: str) -> None:
+        """엔티티 데이터로 딕셔너리 업데이트"""
+        # ID 키 설정 (엔티티 타입에 따라 다름)
+        id_key = self._get_id_key_for_entity(entity)
+        if id_key and id_key != used_key:
+            data[id_key] = entity.id
+        
+        # 엔티티의 모든 속성을 딕셔너리에 복사
+        for key, value in entity.__dict__.items():
+            if key != 'id' and value is not None and key not in data:
+                data[key] = value
+    
+    def _get_id_key_for_entity(self, entity: Any) -> Optional[str]:
+        """엔티티 타입에 따른 ID 키 반환"""
+        if isinstance(entity, Company):
+            return 'company_id'
+        elif isinstance(entity, Employee):
+            return 'employee_id'
+        elif isinstance(entity, Research):
+            return 'project_id'
+        elif isinstance(entity, Expert):
+            return 'expert_id'
+        return None
+    
+    def _update_related_fields(self, data: Dict[str, Any], entity: Any, key: str) -> None:
+        """관련 필드 업데이트 (예: ID가 있을 때 이름 필드 등 추가)"""
+        # company_id가 있으면 company_name 등을 설정
+        if key == 'company_id' and isinstance(entity, Company):
+            data['company_name'] = entity.company_name
+            data['biz_id'] = entity.biz_id
+            # 다른 필드 추가 가능
+            
+        # employee_id가 있으면 name, email 등을 설정
+        elif key == 'employee_id' and isinstance(entity, Employee):
+            data['name'] = entity.name
+            data['email'] = entity.email
+            data['department'] = entity.department
+            data['position'] = entity.position
+            
+        # project_id가 있으면 project_code, project_name 등을 설정
+        elif key == 'project_id' and isinstance(entity, Research):
+            data['project_code'] = entity.project_code
+            data['project_name'] = entity.project_name
+            data['project_period'] = entity.project_period
+            data['project_manager'] = entity.project_manager
+            
+        # expert_id가 있으면 name 등을 설정
+        elif key == 'expert_id' and isinstance(entity, Expert):
+            data['name'] = entity.name
+            data['affiliation'] = entity.affiliation
+            data['position'] = entity.position
+    
+    # 도메인 객체 조회 메서드들
+    def _resolve_company(self, identifier: str) -> Optional[Company]:
+        """회사 정보 조회"""
+        # ID로 조회
+        if identifier.startswith(('COMP-', 'C-')):
+            company = self.company_repo.find_by_id(identifier)
             if company:
-                # ID는 유지하고 나머지 정보 업데이트
-                for key, value in company.__dict__.items():
-                    if key != "id" and value is not None:
-                        supplier_info[key] = value
-                
-                logger.debug("Supplier info enriched with company data", company_id=company_id)
+                logger.debug("Company resolved by ID", id=identifier)
+                return company
         
-        # 새로운 회사명 기반 조회 로직
-        elif "company_name" in supplier_info:
-            company_name = supplier_info["company_name"]
-            company = self.company_repo.find_by_name(company_name)
+        # 이름으로 조회
+        company = self.company_repo.find_by_name(identifier)
+        if company:
+            logger.debug("Company resolved by name", name=identifier)
+            return company
             
-            if company:
-                # 회사 ID 설정 및 나머지 정보 업데이트
-                supplier_info["company_id"] = company.id
-                for key, value in company.__dict__.items():
-                    if key != "id" and value is not None:
-                        supplier_info[key] = value
-                
-                logger.debug("Supplier info enriched with company data by name", company_name=company_name)
+        logger.warning("Company not found", identifier=identifier)
+        return None
     
-    def _enrich_participants(self, participants: List[Dict[str, Any]]) -> None:
-        """참가자 정보 보강"""
-        if not participants:
-            return
-            
-        logger.debug("Enriching participants", count=len(participants))
+    def _resolve_employee(self, identifier: str) -> Optional[Employee]:
+        """직원 정보 조회"""
+        # ID로 조회
+        if identifier.startswith(('EMP-', 'E-')):
+            employee = self.employee_repo.find_by_id(identifier)
+            if employee:
+                logger.debug("Employee resolved by ID", id=identifier)
+                return employee
         
-        for i, participant in enumerate(participants):
-            # 기존 ID 기반 조회 로직 (하위 호환성 유지)
-            if "employee_id" in participant:
-                employee_id = participant["employee_id"]
-                employee = self.employee_repo.find_by_id(employee_id)
+        # 이메일로 조회
+        if '@' in identifier:
+            employee = self.employee_repo.find_by_email(identifier)
+            if employee:
+                logger.debug("Employee resolved by email", email=identifier)
+                return employee
                 
-                if employee:
-                    # ID는 유지하고 나머지 정보 업데이트
-                    for key, value in employee.__dict__.items():
-                        if key != "id" and value is not None:
-                            participant[key] = value
-                    
-                    logger.debug("Participant enriched with employee data by ID", 
-                                employee_id=employee_id, index=i)
-            
-            # 새로운 Email 기반 조회 로직
-            elif "email" in participant:
-                email = participant["email"]
-                employee = self.employee_repo.find_by_email(email)
-                
-                if employee:
-                    # ID 및 기타 정보 업데이트
-                    participant["employee_id"] = employee.id
-                    for key, value in employee.__dict__.items():
-                        if key != "id" and value is not None:
-                            participant[key] = value
-                    
-                    logger.debug("Participant enriched with employee data by email", 
-                                email=email, index=i)
+        logger.warning("Employee not found", identifier=identifier)
+        return None
     
-    def _enrich_research_project(self, research_info: Dict[str, Any]) -> None:
-        """연구 과제 정보 보강"""
-        if not research_info:
-            return
-            
-        logger.debug("Enriching research project info")
-        
-        # 기존 ID 기반 조회 로직 (하위 호환성 유지)
-        if "project_id" in research_info:
-            project_id = research_info["project_id"]
-            research = self.research_repo.find_by_id(project_id)
-            
+    def _resolve_research(self, identifier: str) -> Optional[Research]:
+        """연구 과제 정보 조회"""
+        # ID로 조회
+        if identifier.startswith(('RESEARCH-', 'R-')):
+            research = self.research_repo.find_by_id(identifier)
             if research:
-                # ID는 유지하고 나머지 정보 업데이트
-                for key, value in research.__dict__.items():
-                    if key != "id" and value is not None:
-                        research_info[key] = value
-                
-                logger.debug("Research project info enriched by ID", project_id=project_id)
+                logger.debug("Research project resolved by ID", id=identifier)
+                return research
         
-        # 새로운 project_code 기반 조회 로직
-        elif "project_code" in research_info:
-            project_code = research_info["project_code"]
-            research = self.research_repo.find_by_project_code(project_code)
+        # 코드로 조회
+        research = self.research_repo.find_by_project_code(identifier)
+        if research:
+            logger.debug("Research project resolved by code", code=identifier)
+            return research
             
-            if research:
-                # ID 및 기타 정보 업데이트
-                research_info["project_id"] = research.id
-                for key, value in research.__dict__.items():
-                    if key != "id" and value is not None:
-                        research_info[key] = value
-                
-                logger.debug("Research project info enriched by code", project_code=project_code)
+        logger.warning("Research project not found", identifier=identifier)
+        return None
     
-    def _enrich_expert_info(self, expert_info: Dict[str, Any]) -> None:
-        """전문가 정보 보강"""
-        if not expert_info:
-            return
+    def _resolve_expert(self, identifier: str) -> Optional[Expert]:
+        """전문가 정보 조회"""
+        # ID로 조회
+        expert = self.expert_repo.find_by_id(identifier)
+        if expert:
+            logger.debug("Expert resolved by ID", id=identifier)
+            return expert
             
-        logger.debug("Enriching expert info")
-        
-        if "expert_id" in expert_info:
-            expert_id = expert_info["expert_id"]
-            expert = self.expert_repo.find_by_id(expert_id)
-            
-            if expert:
-                # ID는 유지하고 나머지 정보 업데이트
-                for key, value in expert.__dict__.items():
-                    if key != "id" and value is not None:
-                        expert_info[key] = value
-                
-                logger.debug("Expert info enriched", expert_id=expert_id)
-    
-    def _enrich_approval_list(self, approval_list: List[Dict[str, Any]]) -> None:
-        """결재자 정보 보강"""
-        if not approval_list:
-            return
-            
-        logger.debug("Enriching approval list", count=len(approval_list))
-        
-        for i, approver in enumerate(approval_list):
-            # 기존 ID 기반 조회 로직 (하위 호환성 유지)
-            if "employee_id" in approver:
-                employee_id = approver["employee_id"]
-                employee = self.employee_repo.find_by_id(employee_id)
-                
-                if employee:
-                    # 직원 정보로 결재자 정보 업데이트
-                    approver["name"] = employee.name
-                    approver["department"] = employee.department
-                    approver["position"] = employee.position
-                    
-                    # 서명 이미지가 있으면 추가
-                    if employee.signature:
-                        approver["signature"] = employee.signature
-                    
-                    logger.debug("Approver enriched with employee data by ID", 
-                                employee_id=employee_id, index=i)
-            
-            # 새로운 Email 기반 조회 로직
-            elif "email" in approver:
-                email = approver["email"]
-                employee = self.employee_repo.find_by_email(email)
-                
-                if employee:
-                    # ID 및 기타 정보 업데이트
-                    approver["employee_id"] = employee.id
-                    approver["name"] = employee.name
-                    approver["department"] = employee.department
-                    approver["position"] = employee.position
-                    
-                    # 서명 이미지가 있으면 추가
-                    if employee.signature:
-                        approver["signature"] = employee.signature
-                    
-                    logger.debug("Approver enriched with employee data by email", 
-                                email=email, index=i)
+        logger.warning("Expert not found", identifier=identifier)
+        return None

@@ -232,7 +232,7 @@ class TestDocumentFlow(unittest.TestCase):
                 "receiver": "통합테스트"
             },
             "supplier_info": {
-                "company_id": "COMP-TEST-001"
+                "company_name": "통합테스트 주식회사"
             },
             "item_list": [
                 {
@@ -281,11 +281,11 @@ class TestDocumentFlow(unittest.TestCase):
                 "date_issued": "2023-05-20"
             },
             "research_project_info": {
-                "project_id": "RESEARCH-TEST-001"
+                "project_code": "R2023-001"
             },
             "travel_list": [
                 {
-                    "employee_id": "EMP-TEST-001",
+                    "email": "test@example.com",
                     "purpose": "통합테스트 미팅",
                     "duration": "2023-06-01 ~ 2023-06-03",
                     "destination": "서울"
@@ -320,10 +320,9 @@ class TestDocumentFlow(unittest.TestCase):
                 "receiver": "수신자"
             },
             "supplier_info": {
-                "company_id": "COMP-TEST-001"
+                "company_name": "통합테스트 주식회사"
             },
             "customer_info": {
-                "company_id": "COMP-TEST-001",
                 "company_name": "통합테스트 주식회사"
             },
             "item_list": [
@@ -366,7 +365,7 @@ class TestDocumentFlow(unittest.TestCase):
         # 파일 존재 확인
         self.assertTrue(os.path.exists(saved_path))
         self.assertTrue(os.path.getsize(saved_path) > 0)
-    
+
     def test_travel_expense_document_flow(self):
         """출장정산신청서 생성 흐름 테스트"""
         # 테스트 데이터
@@ -375,16 +374,13 @@ class TestDocumentFlow(unittest.TestCase):
             "metadata": {
                 "document_number": "EXP-TEST-001",
                 "date_issued": "2023-06-25",
-                "reference": "TRAVEL-TEST-001"
+                "reference_document_id": "TRAVEL-TEST-001"
             },
             "research_project_info": {
-                "project_id": "RESEARCH-TEST-001"
+                "project_code": "R2023-001"
             },
-            "travel_info": {
-                "employee_id": "EMP-TEST-001",
-                "duration": "2023-06-01 ~ 2023-06-03",
-                "destination": "서울",
-                "purpose": "업무 미팅"
+            "traveler_info": {
+                "email": "test@example.com"
             },
             "expense_list": [
                 {
@@ -435,7 +431,7 @@ class TestDocumentFlow(unittest.TestCase):
                 "date_issued": "2023-07-05"
             },
             "research_project_info": {
-                "project_id": "RESEARCH-TEST-001"
+                "project_code": "R2023-001"
             },
             "meeting_info": {
                 "date": "2023-07-04 14:00~16:00",
@@ -480,7 +476,7 @@ class TestDocumentFlow(unittest.TestCase):
                 "date_issued": "2023-07-05"
             },
             "research_project_info": {
-                "project_id": "RESEARCH-TEST-001"
+                "project_code": "R2023-001"
             },
             "meeting_info": {
                 "title": "7월 정기 회의",
@@ -528,7 +524,7 @@ class TestDocumentFlow(unittest.TestCase):
                 "date_issued": "2023-07-10"
             },
             "research_project_info": {
-                "project_id": "RESEARCH-TEST-001"
+                "project_code": "R2023-001"
             },
             "purchase_reason": "프로젝트 개발 환경 구축",
             "item_list": [
@@ -586,14 +582,13 @@ class TestDocumentFlow(unittest.TestCase):
                 "date_issued": "2023-07-15"
             },
             "research_project_info": {
-                "project_id": "RESEARCH-TEST-001"
+                "project_code": "R2023-001"
             },
             "expert_info": {
-                "expert_id": "EXP-001",
                 "name": "김전문",
                 "affiliation": "서울대학교",
                 "position": "교수",
-                "dob": "1970-05-15",
+                "birth_date": "1970-05-15",
                 "email": "expert@example.com",
                 "phone": "010-1234-5678",
                 "address": "서울시 관악구"
@@ -637,7 +632,7 @@ class TestDocumentFlow(unittest.TestCase):
                 "date_issued": "2023-08-31"
             },
             "research_project_info": {
-                "project_id": "RESEARCH-TEST-001"
+                "project_code": "R2023-001"
             },
             "expert_info": {
                 "expert_id": "EXP-001",
@@ -691,7 +686,7 @@ class TestDocumentFlow(unittest.TestCase):
                 "purpose": "프로젝트 장비 구매 비용"
             },
             "research_project_info": {
-                "project_id": "RESEARCH-TEST-001"
+                "project_code": "R2023-001"
             },
             "expense_list": [
                 {
