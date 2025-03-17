@@ -24,7 +24,7 @@ class WeasyPrintPdfGenerator(PdfGenerator):
                     margin: 1cm;
                 }
                 html {
-                    zoom: 1;  /* 내용을 축소하여 페이지에 맞춤 */
+                    zoom: 0.75;  /* 내용을 축소하여 페이지에 맞춤 */
                 }
                 body {
                     width: 100%;
