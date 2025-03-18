@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회의비사용신청서</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        
+        @media print {
+            html, body {
+                width: 210mm;
+                height: 297mm;
+                margin: 0;
+                padding: 0;
+            }
+            .A4 {
+                margin: 0;
+                border: initial;
+                border-radius: initial;
+                width: initial;
+                min-height: initial;
+                box-shadow: initial;
+                background: initial;
+                page-break-after: always;
+            }
+        }
+        
+        .A4 {
+            display: flex;
+            flex-direction: column;
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 20mm;
+            box-sizing: border-box;
+            background: white;
+        }
+    
+        table {
+            width: 100%;
+            margin-top: 10mm;
+            border: 1mm solid black;
+            border-collapse: collapse;
+        }
+    
+        th, td {
+            border: 0.5mm solid #cccccc;
+            padding: 10px;
+            text-align: left;
+            height: 30px;
+        }
+    
+        .head {
+            text-align: center;
+            padding-bottom: 10mm;
+            border-bottom: 2px solid black;
+        }
+    
+        .footer {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: flex-end;
+            width: 100%;
+            padding: 5mm 0;
+            height: 30mm;
+            box-sizing: border-box;
+            margin-top: auto;
+        }
+    
+        .footer-border {
+            width: 100%;
+            border-top: 1px solid black;
+            margin-bottom: 5mm;
+        }
+    
+        .footer-content {
+            text-align: right;
+        }
+    
+    </style>
+</head>
+<body>
+    <div class="A4">
+        <div class="head">
+            <div style="font-size: 2em;">회의비사용신청서</div>
+        </div>
+
+        <table>
+            <tbody>
+                <tr>
+                    <td style="width: 20%;">연구 기간</td>
+                    <td>{{ data.metadata.research_period }}</td>
+                </tr>
+                <tr>
+                    <td>연구 과제명</td>
+                    <td>{{ data.metadata.research_name }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <table>
+            <tbody>
+                <tr><td style="width: 20%;">회의 목적</td><td>{{ data.meeting_info.purpose }}</td></tr>
+                <tr><td>일시</td><td>{{ data.meeting_info.date_time }}</td></tr>
+                <tr><td>장소</td><td>{{ data.meeting_info.location }}</td></tr>
+                <tr><td>금액</td><td>{{ data.meeting_info.amount }}</td></tr>
+            </tbody>
+        </table>
+
+        <table>
+            <caption><strong>* 참여인원</strong></caption>
+            <thead>
+                <tr>
+                    <th>소속</th>
+                    <th>직위</th>
+                    <th>성명</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for participant in data.meeting_info.participants %}
+                <tr>
+                    <td>{{ participant.affiliation }}</td>
+                    <td>{{ participant.position }}</td>
+                    <td>{{ participant.name }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="footer">
+            <div class="footer-border"></div>
+            <div class="footer-content">
+                <h3>작성일: {{ data.metadata.issued_date }}</h3>
+                <h3>신청인) 소속: {{ data.applicant_info.department }} 성명: {{ data.applicant_info.name }} (인 또는 서명)</h3>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

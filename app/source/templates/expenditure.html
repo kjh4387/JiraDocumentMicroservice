@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지출결의서</title>
+    <style>
+        /* 문서 규격 */
+        .A4 {
+            display: flex;
+            flex-direction: column;
+            width: 290mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 20mm;
+            box-sizing: border-box;
+            background: white;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 10mm;
+            border: 1mm solid black;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 0.5mm solid #cccccc;
+            padding: 10px;
+            text-align: center;
+            height: 30px;
+        }
+
+        .head {
+            text-align: center;
+            padding-bottom: 10mm;
+            border-bottom: 2px solid black;
+        }
+
+        .approval-table {
+            position: absolute;
+            top: 40mm;
+            right: 13mm;
+        }
+
+        .footer {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: flex-end;
+            width: 100%;
+            padding: 5mm 0;
+            height: 30mm;
+            box-sizing: border-box;
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="A4">
+        <div class="head">
+            <div style="font-size: 2em;">지출결의서</div>
+        </div>
+
+        <!-- 결재 테이블 -->
+        <div class="approval-table">
+            <table>
+                <tbody>
+                    <tr>
+                        <td rowspan="2"> 결<br/> 재</td>
+                        {% for approver in data.approval_list %}
+                        <td>{{ approver.position }}</td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        {% for approver in data.approval_list %}
+                        <td>{{ approver.name }}</td>
+                        {% endfor %}
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 기본 정보 -->
+        <div class="content" style="margin-top: 30mm;">
+            <table>
+                <tr>
+                    <td style="width: 20%;">발 의 일 자</td>
+                    <td style="width: 30%;">{{ data.issued_date }}</td>
+                    <td style="width: 20%;">작 성 자</td>
+                    <td style="width: 30%;">{{ data.applicant.name }}</td>
+                </tr>
+                <tr>
+                    <td>소 속</td>
+                    <td colspan="3">{{ data.applicant.department }}</td>
+                </tr>
+                <tr>
+                    <td>지 출 목 적</td>
+                    <td colspan="3">{{ data.purpose }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- 지출 항목 테이블 -->
+        <div class="table">
+            <table>
+                <tr>
+                    <td style="width: 40%;">적요</td>
+                    <td style="width: 30%;">금액</td>
+                    <td style="width: 30%;">비고</td>
+                </tr>
+                {% for item in data.expense_list %}
+                <tr>
+                    <td>{{ item.description }}</td>
+                    <td>{{ item.amount }}</td>
+                    <td>{{ item.note }}</td>
+                </tr>
+                {% endfor %}
+                <tr>
+                    <td>합계</td>
+                    <td colspan="2">{{ data.total_amount }}</td>
+                </tr>
+                <div class="footer">
+                    <div class="footer-border"></div>
+                    <div class="footer-content" style="text-align: right;">
+                        <h3>위 금액을 영수(청구)합니다.</h3>
+                        <h3>작성일: {{data.metadata.date_issued}}</h3>
+                        <h3>신청인) 소속: {{ data.applicant_info.department }} 성명: {{ data.applicant_info.name }} (인 또는 서명)</h3>
+                    </div>
+                </div>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

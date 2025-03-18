@@ -93,7 +93,7 @@
             border-collapse: collapse;
         }
 
-        .body-table th, .body-table td {
+        .body-table th, .body-table td{
             border: 0.5mm solid #cccccc;
             padding: 10px;
             text-align: center;
@@ -115,6 +115,7 @@
 
         .footer-border {
             width: 100%;
+            /* width: calc(100% - 40mm); */
             border-top: 1px solid black;
             margin-bottom: 5mm;
         }
@@ -122,63 +123,50 @@
 </head>
 <body>
     <div class="A4">
-        <!-- 제목 영역 -->
         <div class="title">
             <div style="font-size: 2em;"> 거래명세서 </div>
         </div>
 
-        <!-- 수신 및 공급자 정보 -->
         <div class="content" style="padding-top: 10mm;">
-            <!-- 왼쪽 테이블 -->
+            <!-- 왼쪽 테이블 (새 스타일 적용) -->
             <table class="left-table">
                 <tbody>
                     <tr>
                         <td>날 짜</td>
-                        <td>{{ research.start_date }}</td>
+                        <td>{{research.start_date.&YYYY.MM.DD&}}</td>
                     </tr>
                     <tr> 
                         <td>받는<br/>업체</td>
-                        <td>{{ research.receiver }}</td>
+                        <td></td>
                     </tr>
-                    <tr>
-                        <td colspan="2" style="border-bottom: 0;">아래와 같이 계산합니다.</td>
-                    </tr>
+                    <tr><td colspan="2" style="border-bottom: 0;">아래와 같이 계산합니다.</td></tr>
                 </tbody>
             </table>
 
-            <!-- 오른쪽 테이블 -->
+            <!-- 오른쪽 테이블 (기존 스타일 유지) -->
             <table class="right-table">
                 <tbody>
                     <tr>
-                        <td rowspan="6" style="width: 10%;">공<br/>급<br/>자</td>
+                        <td rowspan="6" style="width: 10%;">공<br/> 급<br/> 자</td>
                         <td style="width: 30mm;">사업장 소재지</td>
-                        <td>{{ supplier.address }}</td>
+                        <td></td>
                     </tr>
                     <tr> 
                         <td>상호</td>
-                        <td>{{ supplier.company_name }}</td>
+                        <td></td>
                     </tr>
                     <tr>
                         <td>대표자 성명</td>
-                        <td>{{ supplier.rep_name }}</td>
+                        <td></td>
                     </tr>
                     <tr>
                         <td>전화번호</td>
-                        <td>{{ supplier.phone }}</td>
-                    </tr>
-                    <tr>
-                        <td>팩스</td>
-                        <td>{{ supplier.fax }}</td>
-                    </tr>
-                    <tr>
-                        <td>기타</td>
-                        <td>{{ supplier.etc }}</td>
+                        <td></td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
-        <!-- 품목 내역 테이블 -->
         <table class="body-table">
             <thead>
                 <tr>
@@ -194,21 +182,10 @@
             </thead>
             <tbody>
                 {% for item in items %}
-                    <tr>
-                        <td>{{ loop.index }}</td>
-                        <td>{{ item.name }}</td>
-                        <td>{{ item.spec }}</td>
-                        <td>{{ item.quantity }}</td>
-                        <td>{{ item.unit_price }}</td>
-                        <td>{{ item.supply_amount }}</td>
-                        <td>{{ item.tax }}</td>
-                        <td>{{ item.total }}</td>
-                    </tr>
+                    <tr><td> </td><td>{{ item.name }}</td><td> </td><td> </td><td> </td></td> </td><td> </td><td> </td><td> </td></tr>
                 {% endfor %}
             </tbody>
         </table>
-
-        <!-- 메모 -->
         <div class="memo">[MEMO] ※ 부가세 포함 가격입니다.</div>
     </div>
 </body>
