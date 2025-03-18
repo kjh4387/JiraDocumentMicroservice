@@ -3,6 +3,61 @@ from typing import Dict, Any, List, Optional, TypeVar, Generic, Tuple
 
 T = TypeVar('T')
 
+class JiraClient(ABC):
+    """Jira 클라이언트 인터페이스"""
+    
+    @abstractmethod
+    def get_issue(self, issue_key: str) -> Dict[str, Any]:
+        """이슈 정보 조회"""
+        pass
+    
+    @abstractmethod
+    def download_attachments(self, issue_key: str) -> List[str]:
+        """첨부 파일 다운로드"""
+        pass
+    
+    @abstractmethod
+    def get_issue_fields(self, issue_key: str) -> Dict[str, Any]:
+        """이슈 필드 조회"""
+        pass
+
+class JiraFieldMapper(ABC):
+    """Jira 필드 매핑 인터페이스"""
+    
+    @abstractmethod
+    def map_field_id_to_name(field_id: str) -> str:
+        """필드 ID를 이름으로 변환"""
+        pass
+
+    @abstractmethod
+    def map_field_name_to_id(field_name: str) -> str:
+        """필드 이름을 ID로 변환"""
+        pass
+
+    @abstractmethod
+    def transform_response(response_data: Dict[str, Any]) -> Dict[str, Any]:
+        """응답 데이터 변환"""
+        pass
+
+    @abstractmethod
+    def set_mapping_provider(self, provider):
+        """매핑 제공자 설정"""
+        pass
+
+class JiraFieldMappingProvider(ABC):
+    """Jira 필드 매핑 제공자 인터페이스"""
+    
+    @abstractmethod
+    def get_field_mapping(self) -> Dict[str, Any]:
+        """필드 매핑 가져오기"""
+        pass
+
+    @abstractmethod
+    def refresh(self)->None:
+        """매핑 새로고침"""
+        pass   
+
+
 class Repository(Generic[T], ABC):
     """저장소 인터페이스"""
     
