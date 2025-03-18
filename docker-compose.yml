@@ -11,6 +11,10 @@ services:
       - .:/workspace
     environment:
       - ENV:development
+      - JIRA_BASE_URL=https://msimul.atlassian.net
+      - JIRA_USERNAME=juwon@msimul.com
+      - JIRA_API_TOKEN=ATATT3xFfGF06CSBKdkFDyj5YLGYHirFjoglCVtvLCia7XxTR57nYY-wj1rxkTVsa3Gpgd7fZ4pqcKIPdR7g9RJR9lpmkDXZA1D1eWKb-EceAayOpapM-wBn3NCg6KifTFEJqo5DsYGdMOFYl0Kg9j1TF0B1EFwA-VRZcGB0UFd94Cp03lO7IzE=68E2873A
+      - JIRA_DOWNLOAD_DIR=/tmp/jira_attachments
     depends_on:
       - app
     command: sleep infinity
@@ -36,12 +40,15 @@ services:
     depends_on:
       - db
     environment:
-      # DB 접속 정보: Python 코드에서 os.getenv("DB_HOST") 등으로 가져갈 수 있음
-      - DB_HOST=db
+      - DB_HOST=localhost
       - DB_PORT=5432
       - DB_NAME=mydb
       - DB_USER=myuser
       - DB_PASSWORD=mypassword
+      - JIRA_BASE_URL=https://msimul.atlassian.net
+      - JIRA_USERNAME=juwon@msimul.com
+      - JIRA_API_TOKEN=ATATT3xFfGF06CSBKdkFDyj5YLGYHirFjoglCVtvLCia7XxTR57nYY-wj1rxkTVsa3Gpgd7fZ4pqcKIPdR7g9RJR9lpmkDXZA1D1eWKb-EceAayOpapM-wBn3NCg6KifTFEJqo5DsYGdMOFYl0Kg9j1TF0B1EFwA-VRZcGB0UFd94Cp03lO7IzE=68E2873A
+      - JIRA_DOWNLOAD_DIR=/tmp/jira_attachments
     ports:
       - "8000:8000"
     volumes:
