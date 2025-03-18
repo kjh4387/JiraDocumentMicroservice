@@ -25,15 +25,21 @@ class JinjaDocumentRenderer(DocumentRenderer):
         logger.debug("Rendering document", document_type=document_type)
         
         try:
-            # 문서 템플릿 가져오기 - 다양한 경로 시도
+            # 문서 템플릿 가져오기
             template_name = self._get_template_path(document_type)
             
-            # 템플릿 렌더링 - 모든 데이터를 한 번에 전달
+            # 템플릿 렌더링 - data에 있는 document_type만 사용
             template = self.template_env.get_template(template_name)
-            rendered_html = template.render(
-                document_type=document_type,
-                **data  # 모든 데이터를 템플릿에 직접 전달
-            )
+            
+            # document_type이 data에 없으면 추가
+            if 'document_type' not in data:
+                data_copy = data.copy()
+                data_copy['document_type'] = document_type
+            else:
+                data_copy = data
+            
+            # 데이터만 전달하여 중복 방지
+            rendered_html = template.render(**data_copy)
             
             logger.debug("Document rendered successfully", document_type=document_type, template=template_name)
             return rendered_html
@@ -91,47 +97,7 @@ class JinjaDocumentRenderer(DocumentRenderer):
                     template=mapping[document_type])
         return mapping[document_type]
     
-    def _generate_fallback_html(self, document_type: str, data: Dict[str, Any]) -> str:
-        """템플릿을 찾지 못한 경우 기본 HTML 생성 (비상용)"""
-        logger.warning("Generating fallback HTML for document", document_type=document_type)
-        
-        html = f"""<!DOCTYPE html>
-        <html>
-        <head>
-            <title>{document_type}</title>
-            <meta charset="utf-8">
-            <style>
-                body {{ font-family: Arial, sans-serif; margin: 20px; }}
-                .section {{ margin-bottom: 20px; border: 1px solid #ddd; padding: 10px; }}
-                h1 {{ color: #333; }}
-                dl {{ margin: 0; }}
-                dt {{ font-weight: bold; }}
-                dd {{ margin-left: 20px; margin-bottom: 10px; }}
-                table {{ border-collapse: collapse; width: 100%; }}
-                th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
-                th {{ background-color: #f2f2f2; }}
-            </style>
-        </head>
-        <body>
-            <h1>{document_type}</h1>
-        """
-        
-        # 각 데이터 섹션 추가
-        for key, value in data.items():
-            if key == "document_type":
-                continue
-                
-            html += f'<div class="section">\n'
-            html += f'<h2>{key}</h2>\n'
-            html += self._generate_data_html(value)
-            html += '</div>\n'
-            
-        html += """
-        </body>
-        </html>
-        """
-        
-        return html
+    
     
     def _generate_data_html(self, data: Any) -> str:
         """데이터를 HTML로 변환"""

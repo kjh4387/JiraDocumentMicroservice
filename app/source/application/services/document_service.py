@@ -5,6 +5,7 @@ from datetime import datetime
 from app.source.core.interfaces import SchemaValidator, DataEnricher, DocumentRenderer, PdfGenerator
 from app.source.core.exceptions import ValidationError, RenderingError, PdfGenerationError
 from app.source.core.logging import get_logger
+from app.source.core.exceptions import DocumentAutomationError
 
 logger = get_logger(__name__)
 

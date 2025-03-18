@@ -10,7 +10,6 @@ from app.source.infrastructure.repositories.employee_repo import EmployeeReposit
 from app.source.infrastructure.repositories.research_repo import ResearchRepository
 from app.source.infrastructure.repositories.expert_repo import ExpertRepository
 from app.source.infrastructure.schema.validators import JsonSchemaValidator
-from app.source.infrastructure.rendering.section_renderer import JinjaSectionRenderer
 from app.source.infrastructure.rendering.document_renderer import JinjaDocumentRenderer
 from app.source.infrastructure.rendering.pdf_generator import WeasyPrintPdfGenerator
 from app.source.application.services.data_enricher import DatabaseDataEnricher
