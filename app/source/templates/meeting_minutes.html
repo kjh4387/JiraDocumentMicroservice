@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회의록</title>
+    <style>
+        /* 프린트 관련 설정 */
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        
+        @media print {
+            html, body {
+                width: 210mm;
+                height: 297mm;
+                margin: 0;
+                padding: 0;
+            }
+            .A4 {
+                margin: 0;
+                border: initial;
+                border-radius: initial;
+                width: initial;
+                min-height: initial;
+                box-shadow: initial;
+                background: initial;
+                page-break-after: always;
+            }
+        }
+        /* 문서 규격 */
+        .A4 {
+            display: flex;
+            flex-direction: column;
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 20mm;
+            box-sizing: border-box;
+            background: white;
+        }
+    
+        table {
+            width: 100%;
+            margin-top: 10mm;
+            border: 1mm solid black;
+            border-collapse: collapse;
+        }
+    
+        th, td {
+            border: 0.5mm solid #cccccc;
+            padding: 10px;
+            text-align: center;
+            height: 30px;
+        }
+    
+        .head {
+            text-align: center;
+            padding-bottom: 10mm;
+            border-bottom: 2px solid black;
+        }
+    
+        .footer {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: flex-end; /* 오른쪽 정렬 */
+            width: 100%;
+            padding: 5mm 0;
+            height: 30mm;
+            box-sizing: border-box;
+            margin-top: auto;
+        }
+    
+        .footer-border {
+            width: 100%;
+            border-top: 1px solid black;
+            margin-bottom: 5mm;
+        }
+    
+        .footer-content {
+            text-align: right; /* 작성일 오른쪽 정렬 */
+        }
+    
+    </style>
+</head>
+<body>
+    <div class="A4">
+        <div class="head">
+            <div style="font-size: 2em;">회의록</div>
+        </div>
+        <div class="content">
+            <h2> 회의 내용 </h2>
+        </div>
+        <div class="table">
+            <table>
+                <thead>
+                    <tr>
+                        <td style="width: 20%;">회의날짜</td>
+                        <td colspan="2">{{ meeting_date }}</td>
+                    </tr>
+                    <tr>
+                        <td>회의장소</td>
+                        <td colspan="2">{{ meeting_location }}</td>
+                    </tr>
+                    <tr>
+                        <td>회의주제</td>
+                        <td colspan="2">{{ meeting_topic }}</td>
+                    </tr>
+                    <tr>
+                        <td>회의내용</td>
+                        <td colspan="2">{{ meeting_content }}</td>
+                    </tr>
+                    <tr>
+                        <td rowspan="2">참여인원</td>
+                        <td>내부 참석자</td>
+                        <td>{{ internal_count }} 명</td>
+                    </tr>
+                    <tr>
+                        <td>외부 참석자</td>
+                        <td>{{ external_count }} 명</td>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- 필요에 따라 데이터 행 추가 -->
+                </tbody>
+            </table>
+            <div style="color: red;">
+                *회의비 1인당 최대 30,000원 지원<br/>
+                *심야시간대 10:00 이후 사용 및 유흥업소/주류구입에 대한 사용금액은 지원 불가
+            </div>
+        </div>
+        <div class="footer">
+            <div class="footer-border"></div>
+            <div class="footer-content">
+                <h3>{{ issued_date }}</h3>
+                <h3>대표 : &nbsp; &nbsp; 김지태 &nbsp; (인 또는 서명)</h3>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

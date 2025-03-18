@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>출장정산신청서</title>
+    <style>
+        /* 프린트 관련 설정 */
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        
+        @media print {
+            html, body {
+                width: 210mm;
+                height: 297mm;
+                margin: 0;
+                padding: 0;
+            }
+            .A4 {
+                margin: 0;
+                border: initial;
+                border-radius: initial;
+                width: initial;
+                min-height: initial;
+                box-shadow: initial;
+                background: initial;
+                page-break-after: always;
+            }
+        }
+        
+        /* 문서 규격 */
+        .A4 {
+            display: flex;
+            flex-direction: column;
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 20mm;
+            box-sizing: border-box;
+            background: white;
+        }
+    
+        table {
+            width: 100%;
+            margin-top: 10mm;
+            border: 1mm solid black;
+            border-collapse: collapse;
+        }
+    
+        th, td {
+            border: 0.5mm solid #cccccc;
+            padding: 5px;
+            text-align: center;
+            height: 20px;
+        }
+    
+        .head {
+            text-align: center;
+            padding-bottom: 10mm;
+            border-bottom: 2px solid black;
+        }
+    
+        .footer {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: flex-end; /* 오른쪽 정렬 */
+            width: 100%;
+            padding: 5mm 0;
+            height: 30mm;
+            box-sizing: border-box;
+            margin-top: auto;
+        }
+    
+        .footer-border {
+            width: 100%;
+            /* border-top: 1px solid black; */
+            margin-bottom: 5mm;
+        }
+    
+        .footer-content {
+            text-align: right; /* 작성일 오른쪽 정렬 */
+        }
+    
+    </style>
+</head>
+<body>
+    <div class="A4">
+        <!-- 제목 영역 -->
+        <div class="head">
+            <div style="font-size: 2em;">출장정산신청서</div>
+        </div>
+        
+        <!-- 연구 정보 -->
+        <div class="content">
+            <table>
+                <tbody>
+                    <tr>
+                        <td class="content" style="width: 20%;">연구 기간</td>
+                        <td>{{ research_period }}</td>
+                    </tr>
+                    <tr>
+                        <td class="content">연구 과제명</td>
+                        <td>{{ research_name }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 출장 정보 및 운임 내역 -->
+        <div class="table">
+            <table>
+                <thead>
+                    <!-- 헤더: 소속 등은 기본값(고정) 또는 필요시 별도 플레이스홀더 사용 -->
+                    <tr>
+                        <th style="width: 10%;">소속</th>
+                        <th colspan="3" style="width: 30%;">주식회사 메테오<br/>시뮬레이션</th>
+                        <th style="width: 10%;">직 급<br/>(직위)</th>
+                        <th style="width: 10%;">대표</th>
+                        <th style="width: 10%;">성명</th>
+                        <th style="width: 10%;">김지태</th>
+                        <th style="width: 12%;">출장인원</th>
+                        <th style="width: 8%;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- 출장일정 -->
+                    <tr>
+                        <td rowspan="2">출 장<br/>일 정</td>
+                        <td style="width: 10%;">일 시</td>
+                        <td colspan="8">{{ travel.departure_time }}</td>
+                    </tr>
+                    <tr>
+                        <td>출장지<br/>및 목적</td>
+                        <td colspan="8">{{ travel.destination_and_purpose }}</td>
+                    </tr>
+                    <!-- 운임 내역 (최대 4회) -->
+                    <tr>
+                        <td rowspan="4">운 임</td>
+                        <td>일자</td>
+                        <td colspan="2">{{ travel.transport_date_1 }}</td>
+                        <td colspan="2">{{ travel.departure_location_1 }}</td>
+                        <td colspan="2">{{ travel.arrival_location_1 }}</td>
+                        <td>{{ travel.grade_1 }}</td>
+                        <td>{{ travel.amount_1 }}</td>
+                    </tr>
+                    <tr>
+                        <td>{{ travel.transport_date_2 }}</td>
+                        <td colspan="2">{{ travel.transport_method_2 }}</td>
+                        <td colspan="2">{{ travel.departure_location_2 }}</td>
+                        <td colspan="2">{{ travel.arrival_location_2 }}</td>
+                        <td>{{ travel.grade_2 }}</td>
+                        <td>{{ travel.amount_2 }}</td>
+                    </tr>
+                    <tr>
+                        <td>{{ travel.transport_date_3 }}</td>
+                        <td colspan="2">{{ travel.transport_method_3 }}</td>
+                        <td colspan="2">{{ travel.departure_location_3 }}</td>
+                        <td colspan="2">{{ travel.arrival_location_3 }}</td>
+                        <td>{{ travel.grade_3 }}</td>
+                        <td>{{ travel.amount_3 }}</td>
+                    </tr>
+                    <tr>
+                        <td>{{ travel.transport_date_4 }}</td>
+                        <td colspan="2">{{ travel.transport_method_4 }}</td>
+                        <td colspan="2">{{ travel.departure_location_4 }}</td>
+                        <td colspan="2">{{ travel.arrival_location_4 }}</td>
+                        <td>{{ travel.grade_4 }}</td>
+                        <td>{{ travel.amount_4 }}</td>
+                    </tr>
+                    <!-- 입금사항 -->
+                    <tr>
+                        <td>입금사항</td>
+                        <td>은행</td>
+                        <td style="width: 10%;">{{ travel.bank }}</td>
+                        <td>예금주</td>
+                        <td>{{ applicant_name }}</td>
+                        <td>계좌번호</td>
+                        <td colspan="2">{{ travel.account_number }}</td>
+                        <td>출장비</td>
+                        <td>{{ travel.total_expense }}</td>
+                    </tr>
+                    <!-- 영수증 부착란 -->
+                    <tr>
+                        <td rowspan="3">영 수 증<br/>부 착 란</td>
+                        <td colspan="9">
+                            <h3>* 해당면에 부착이 어려운 경우, 영수증 첨부철에 부착하여 제출</h3>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="9" style="text-align: left;">
+                            일비: {{ travel.daily_allowance }}<br/>
+                            식비: {{ travel.meal_allowance }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="9" style="height: 150mm;">
+                            {{ travel.receipts_attachment }}
+                        </td>
+                    </tr>
+                    <!-- 푸터 -->
+                    <tr>
+                        <td colspan="10">        
+                            <div class="footer">
+                                <div class="footer-border"></div>
+                                <div class="footer-content">
+                                    <h3>작성일: {{ issued_date }}</h3>
+                                    <h3>신청인) 소속: {{ applicant_department }} 성명: {{ applicant_name }} (인 또는 서명)</h3>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
