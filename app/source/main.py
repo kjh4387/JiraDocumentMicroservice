@@ -4,8 +4,13 @@ from config.settings import get_settings
 from config.di_container import DIContainer
 from core.exceptions import DocumentAutomationError
 from core.logging import get_logger
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
+from pydantic import ValidationError
 
 logger = get_logger(__name__)
+
+app = FastAPI()
 
 def main():
     """메인 애플리케이션"""
@@ -108,6 +113,54 @@ def main():
     except Exception as e:
         logger.critical("Unexpected error", error=str(e), exc_info=True)
         return 2
+
+@app.post("/api/documents")
+async def create_document(request: DocumentRequestDTO):
+    """문서 생성 API"""
+    try:
+        # DTO를 딕셔너리로 변환
+        data = request.dict()
+        
+        # 문서 서비스 호출
+        result = document_service.create_document(data)
+        
+        # 응답 변환 및 반환
+        response = DocumentResponseDTO(
+            document_id=result["document_id"],
+            document_type=result["document_type"],
+            created_at=result["created_at"],
+            html=result.get("html"),
+            pdf_url=f"/api/documents/{result['document_id']}/pdf"
+        )
+        
+        return response
+        
+    except ValidationError as e:
+        # 400 Bad Request - 유효하지 않은 요청
+        error_detail = str(e)
+        logger.warning("Validation error", error=error_detail)
+        raise HTTPException(
+            status_code=400,
+            detail={"message": "유효하지 않은 문서 요청", "error": error_detail}
+        )
+        
+    except RenderingError as e:
+        # 422 Unprocessable Entity - 유효한 요청이지만 처리할 수 없음
+        error_detail = str(e)
+        logger.error("Rendering error", error=error_detail)
+        raise HTTPException(
+            status_code=422,
+            detail={"message": "문서 렌더링 실패", "error": error_detail}
+        )
+        
+    except DocumentAutomationError as e:
+        # 500 Internal Server Error - 서버 오류
+        error_detail = str(e)
+        logger.error("Document automation error", error=error_detail)
+        raise HTTPException(
+            status_code=500,
+            detail={"message": "문서 생성 실패", "error": error_detail}
+        )
 
 if __name__ == "__main__":
     sys.exit(main())

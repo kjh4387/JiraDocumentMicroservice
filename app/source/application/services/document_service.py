@@ -29,44 +29,57 @@ class DocumentService:
         document_type = data.get("document_type")
         logger.info("Creating document", document_type=document_type)
         
-        # 데이터 검증
-        is_valid, error = self.validator.validate(data)
-        if not is_valid:
-            logger.error("Document data validation failed", error=error)
-            raise ValidationError(f"Invalid document data: {error}")
-        
-        # 데이터 보강
-        enriched_data = self.data_enricher.enrich(document_type, data)
-        logger.debug("Document data enriched")
-        
-        # HTML 렌더링
         try:
+            # 데이터 검증 - 이제 템플릿 검증도 포함
+            is_valid, error = self.validator.validate(data)
+            if not is_valid:
+                logger.error("Document data validation failed", error=error)
+                raise ValidationError(f"유효하지 않은 문서 데이터: {error}")
+            
+            # 데이터 보강
+            enriched_data = self.data_enricher.enrich(document_type, data)
+            logger.debug("Document data enriched")
+            
+            # HTML 렌더링
             html = self.renderer.render(document_type, enriched_data)
             logger.debug("Document rendered to HTML", html_length=len(html))
-        except RenderingError as e:
-            logger.error("Document rendering failed", error=str(e))
-            raise
-        
-        # PDF 생성
-        try:
+            
+            # PDF 생성
             pdf = self.pdf_generator.generate(html)
             logger.debug("PDF generated", pdf_size=len(pdf))
-        except PdfGenerationError as e:
-            logger.error("PDF generation failed", error=str(e))
+            
+            # 결과 반환
+            result = {
+                "document_id": str(uuid.uuid4()),
+                "document_type": document_type,
+                "created_at": datetime.now().isoformat(),
+                "html": html,
+                "pdf": pdf
+            }
+            
+            logger.info("Document created successfully", 
+                       document_id=result["document_id"], document_type=document_type)
+            return result
+            
+        except ValidationError as e:
+            # 검증 오류 - 그대로 전파
             raise
-        
-        # 결과 반환
-        result = {
-            "document_id": str(uuid.uuid4()),
-            "document_type": document_type,
-            "created_at": datetime.now().isoformat(),
-            "html": html,
-            "pdf": pdf
-        }
-        
-        logger.info("Document created successfully", 
-                   document_id=result["document_id"], document_type=document_type)
-        return result
+            
+        except RenderingError as e:
+            # 렌더링 오류는 템플릿 문제일 가능성이 큼
+            logger.error("Failed to render document template", document_type=document_type, error=str(e))
+            raise RenderingError(f"문서 템플릿 렌더링 실패: {str(e)}")
+            
+        except PdfGenerationError as e:
+            # PDF 생성 오류
+            logger.error("Failed to generate PDF", document_type=document_type, error=str(e))
+            raise
+            
+        except Exception as e:
+            # 기타 예상치 못한 오류
+            logger.critical("Unexpected error creating document", 
+                          document_type=document_type, error=str(e), exc_info=True)
+            raise DocumentAutomationError(f"문서 생성 중 오류 발생: {str(e)}")
     
     def save_pdf(self, pdf_data: bytes, output_path: str) -> str:
         """PDF 파일 저장"""

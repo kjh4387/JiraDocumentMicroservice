@@ -44,7 +44,6 @@ class DIContainer:
         self._schema_validator = None
         
         # 렌더링
-        self._section_renderer = None
         self._document_renderer = None
         self._pdf_generator = None
         
@@ -114,21 +113,13 @@ class DIContainer:
             logger.debug("SchemaValidator created")
         return self._schema_validator
     
-    @property
-    def section_renderer(self) -> SectionRenderer:
-        """섹션 렌더러 인스턴스 반환"""
-        if self._section_renderer is None:
-            self._section_renderer = JinjaSectionRenderer(self.config["template_dir"])
-            logger.debug("SectionRenderer created")
-        return self._section_renderer
     
     @property
     def document_renderer(self) -> DocumentRenderer:
         """문서 렌더러 인스턴스 반환"""
         if self._document_renderer is None:
             self._document_renderer = JinjaDocumentRenderer(
-                self.config["template_dir"], 
-                self.section_renderer
+                self.config["template_dir"]
             )
             logger.debug("DocumentRenderer created")
         return self._document_renderer
