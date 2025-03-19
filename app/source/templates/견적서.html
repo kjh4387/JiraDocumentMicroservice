@@ -109,6 +109,19 @@
             height: 30px;
         }
 
+        .currency-container {
+            display: flex;
+            align-items: left;
+        }
+
+        .currency-symbol {
+            margin-right: 5px;
+        }
+
+        .currency-amount {
+            text-align: right;
+        }
+
     </style>
 </head>
 <body>
@@ -124,11 +137,11 @@
                     <tbody>
                         <tr>
                             <td style="width: 30mm;">날 짜</td>
-                            <td>{{data.metadata.date_issued}}</td>
+                            <td>{{metadata.date_issued}}</td>
                         </tr>
                         <tr> 
                             <td>수 신</td>
-                            <td>{{data.metadata.receiver}}</td>
+                            <td>{{metadata.receiver}}</td>
                         </tr>
                         <tr>
                             <td>참 조</td>
@@ -145,19 +158,19 @@
                     <tbody>
                         <tr>
                             <td style="width: 25mm;">사업장 소재지</td>
-                            <td>{{data.supplier_info.address}}</td>
+                            <td>{{supplier_info.address}}</td>
                         </tr>
                         <tr> 
                             <td>상호</td>
-                            <td>{{data.supplier_info.company_name}}</td>
+                            <td>{{supplier_info.company_name}}</td>
                         </tr>
                         <tr>
                             <td>대표자 성명</td>
-                            <td>{{data.supplier_info.rep_name}}</td>
+                            <td>{{supplier_info.rep_name}}</td>
                         </tr>
                         <tr>
                             <td>전화번호</td>
-                            <td>{{data.supplier_info.phone}}</td>
+                            <td>{{ supplier_info.phone}}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -181,7 +194,7 @@
                 {% set total_amount = namespace(value=0) %}
                 {% set total_vat = namespace(value=0) %}
                 {% set grand_total = namespace(value=0) %}
-                {% for item in data.item_list %}
+                {% for item in  item_list %}
                     {% set item_amount = (item.unit_price|int) * (item.quantity|int) %}
                     {% set item_vat = ((item_amount * 0.1)|round)|int %}
                     {% set item_total = item_amount + item_vat %}
@@ -193,11 +206,11 @@
                     <td>{{ loop.index }}</td>
                     <td>{{ item.name }}</td>
                     <td>EA</td>
-                    <td>{{ item.quantity }}</td>
-                    <td>{{ item.unit_price }}</td>
-                    <td>{{ item_amount }}</td>
-                    <td>{{ item_vat }}</td>
-                    <td>{{ item_total }}</td>
+                    <td>{{ item.quantity|number_aligned }}</td>
+                    <td>{{ item.unit_price|currency_aligned }}</td>
+                    <td>{{ item_amount|currency_aligned }}</td>
+                    <td>{{ item_vat|currency_aligned }}</td>
+                    <td>{{ item_total|currency_aligned }}</td>
                 </tr>
                 {% endfor %}
                 <!-- 합계 행 추가 -->
@@ -214,6 +227,7 @@
                     </td>
                 </tr>
             </tbody>
+            
             </table>
         <div class="memo">[MEMO] ※ 부가세 포함 가격입니다.</div>
 
@@ -221,11 +235,11 @@
         <div style="margin-top: 20mm; border: 1px dashed #ccc; padding: 5mm; background-color: #f9f9f9;">
             <h3>디버깅 정보:</h3>
             <p>전체 데이터 객체: {{ data }}</p>
-            <p>metadata 객체: {{ data.metadata if data is defined and data.metadata is defined else 'metadata 없음' }}</p>
-            <p>customer_name: {{ data.metadata.customer_name if data is defined and data.metadata is defined and data.metadata.customer_name is defined else '없음' }}</p>
-            <p>customer_address: {{ data.metadata.customer_address if data is defined and data.metadata is defined and data.metadata.customer_address is defined else '없음' }}</p>
-            <p>customer_representative: {{ data.metadata.customer_representative if data is defined and data.metadata is defined and data.metadata.customer_representative is defined else '없음' }}</p>
-            <p>customer_phone: {{ data.metadata.customer_phone if data is defined and data.metadata is defined and data.metadata.customer_phone is defined else '없음' }}</p>
+            <p>metadata 객체: {{  metadata if data is defined and  metadata is defined else 'metadata 없음' }}</p>
+            <p>customer_name: {{  metadata.customer_name if data is defined and  metadata is defined and  metadata.customer_name is defined else '없음' }}</p>
+            <p>customer_address: {{  metadata.customer_address if data is defined and  metadata is defined and  metadata.customer_address is defined else '없음' }}</p>
+            <p>customer_representative: {{  metadata.customer_representative if data is defined and  metadata is defined and  metadata.customer_representative is defined else '없음' }}</p>
+            <p>customer_phone: {{  metadata.customer_phone if data is defined and  metadata is defined and  metadata.customer_phone is defined else '없음' }}</p>
         </div>
     </div>
 
