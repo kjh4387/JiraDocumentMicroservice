@@ -1,8 +1,13 @@
 from typing import Dict, Any
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
-from app.source.core.interfaces import DocumentRenderer, SectionRenderer
+from app.source.core.interfaces import DocumentRenderer
 from app.source.core.exceptions import RenderingError
 from app.source.core.logging import get_logger
+from app.source.infrastructure.rendering.filter_util import (
+    format_date, format_korean_date, format_date_range, 
+    format_number, number_to_korean, format_korean_currency, format_korean_currency_with_num,
+    format_currency_aligned, format_number_aligned
+)
 import os
 
 logger = get_logger(__name__)
@@ -14,7 +19,26 @@ class JinjaDocumentRenderer(DocumentRenderer):
         logger.debug("Initializing JinjaDocumentRenderer", template_dir=template_dir)
         try:
             self.template_dir = template_dir
-            self.template_env = Environment(loader=FileSystemLoader(template_dir))
+            self.template_env = Environment(
+                loader=FileSystemLoader(template_dir),
+                autoescape=True  # HTML 자동 이스케이프 활성화
+            )
+            
+            # 커스텀 필터 등록
+            self.template_env.filters['format_date'] = format_date
+            self.template_env.filters['korean_date'] = format_korean_date
+            self.template_env.filters['date_range'] = format_date_range
+            self.template_env.filters['format_number'] = format_number
+            
+            # 한글 금액 필터 추가
+            self.template_env.filters['korean_number'] = number_to_korean
+            self.template_env.filters['korean_currency'] = format_korean_currency
+            self.template_env.filters['korean_currency_with_num'] = format_korean_currency_with_num
+            
+            # 정렬 필터 추가
+            self.template_env.filters['currency_aligned'] = format_currency_aligned
+            self.template_env.filters['number_aligned'] = format_number_aligned
+            
             logger.info("Document renderer initialized", template_dir=template_dir)
         except Exception as e:
             logger.error("Failed to initialize document renderer", error=str(e))

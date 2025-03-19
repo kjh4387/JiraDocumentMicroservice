@@ -125,13 +125,6 @@ class DataEnricher(ABC):
         """문서 데이터 보강"""
         pass
 
-class SectionRenderer(ABC):
-    """섹션 렌더링 인터페이스"""
-    
-    @abstractmethod
-    def render_section(self, document_type: str, section_name: str, section_data: Dict[str, Any]) -> str:
-        """섹션 렌더링"""
-        pass
 
 class DocumentRenderer(ABC):
     """문서 렌더링 인터페이스"""

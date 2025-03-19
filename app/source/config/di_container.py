@@ -1,6 +1,6 @@
 from app.source.core.interfaces import (
     SchemaValidator, DataEnricher, DocumentRenderer, 
-    SectionRenderer, PdfGenerator, Repository, UnitOfWork,
+    PdfGenerator, Repository, UnitOfWork,
     JiraClient, JiraFieldMapper, JiraFieldMappingProvider
 )
 from app.source.core.domain import Company, Employee, Research, Expert
