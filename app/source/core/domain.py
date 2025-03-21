@@ -51,22 +51,6 @@ class Research:
     description: Optional[str] = None
 
 @dataclass
-class DocumentSection:
-    """문서 섹션 기본 클래스"""
-    section_type: str
-    data: Dict[str, Any]
-
-@dataclass
-class Document:
-    """문서 기본 클래스"""
-    id: str
-    document_type: str
-    created_at: date = field(default_factory=date.today)
-    updated_at: date = field(default_factory=date.today)
-    sections: List[DocumentSection] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
-
-@dataclass
 class Expert:
     """전문가 정보"""
     id: str
@@ -82,3 +66,5 @@ class Expert:
     account_number: Optional[str] = None
     specialty: Optional[str] = None
     bio: Optional[str] = None
+
+

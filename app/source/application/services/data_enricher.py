@@ -52,7 +52,8 @@ class DatabaseDataEnricher(DataEnricher):
             
             # Expert 관련 키
             'expert_id': 'expert',
-            'expert_info': 'expert'
+            'expert_info': 'expert',
+            '회의_참석자(내부_인원)': 'employee_list',  # 추가
         }
         
         logger.debug("DatabaseDataEnricher initialized")

@@ -373,7 +373,7 @@
           "description": "참석자"
         }
       },
-      "required": ["date", "place"]
+      "required": ["date"]
     },
     "EstimateDoc": {
       "type": "object",

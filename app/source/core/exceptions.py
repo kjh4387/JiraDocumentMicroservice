@@ -33,3 +33,7 @@ class SchemaError(DocumentAutomationError):
 class ConfigurationError(DocumentAutomationError):
     """설정 오류"""
     pass
+
+class MappingError(DocumentAutomationError):
+    """매핑 오류"""
+    pass
