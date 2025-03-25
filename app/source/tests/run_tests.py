@@ -6,6 +6,8 @@ import time
 import importlib.util
 import inspect
 from collections import defaultdict
+import argparse
+from typing import List, Optional
 
 # 프로젝트 루트 디렉토리를 Python 경로에 추가
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -78,170 +80,204 @@ def extract_test_cases(file_path):
         print(f"{Fore.RED}Error extracting test cases from {file_path}: {str(e)}")
         return []
 
-def run_tests(test_path, test_type="unit"):
-    """테스트 실행 및 결과 반환"""
-    # 테스트 로더 생성
+def discover_tests(start_dir: str, pattern: str = 'test_*.py') -> unittest.TestSuite:
+    """지정된 디렉토리에서 테스트를 발견하여 테스트 스위트 반환"""
     loader = unittest.TestLoader()
-    
-    # 테스트 스위트 생성
-    if os.path.isfile(test_path):
-        # 파일인 경우 해당 파일만 로드
-        suite = loader.discover(os.path.dirname(test_path), pattern=os.path.basename(test_path))
-    else:
-        # 디렉토리인 경우 모든 테스트 파일 로드
-        suite = loader.discover(test_path, pattern="test_*.py")
-    
-    # 테스트 실행 결과 저장 객체
-    result = TestResult()
-    
-    # 결과 저장용 TextTestRunner
+    return loader.discover(start_dir, pattern=pattern)
+
+def run_tests(test_suite: unittest.TestSuite) -> unittest.TestResult:
+    """테스트 스위트를 실행하고 결과 반환"""
     runner = unittest.TextTestRunner(verbosity=2)
+    return runner.run(test_suite)
+
+def print_summary(result: unittest.TestResult, test_type: str, start_time: float, end_time: float):
+    """테스트 결과 요약 출력"""
+    duration = end_time - start_time
     
-    # 시간 측정 시작
+    print("\n" + "=" * 80)
+    if result.wasSuccessful():
+        print(f"{Fore.GREEN}{test_type} 테스트 결과: 성공{Fore.RESET}")
+    else:
+        print(f"{Fore.RED}{test_type} 테스트 결과: 실패{Fore.RESET}")
+        
+    print(f"실행 시간:{Fore.RESET} {duration:.2f}초")
+    print(f"테스트 수:{Fore.RESET} {result.testsRun}")
+    print(f"성공:{Fore.RESET} {result.testsRun - len(result.failures) - len(result.errors)}")
+    print(f"실패:{Fore.RESET} {len(result.failures)}")
+    print(f"에러:{Fore.RESET} {len(result.errors)}")
+    
+    if result.failures:
+        print(f"\n{Fore.RED}실패한 테스트:{Fore.RESET}")
+        for failure in result.failures:
+            print(f"- {failure[0]}")
+    
+    if result.errors:
+        print(f"\n{Fore.RED}에러가 발생한 테스트:{Fore.RESET}")
+        for error in result.errors:
+            print(f"- {error[0]}")
+    
+    print("=" * 80 + "\n")
+
+def run_unit_tests() -> bool:
+    """단위 테스트 실행"""
+    print(f"\n{Fore.BLUE}단위 테스트 실행 중...{Fore.RESET}\n")
+    
     start_time = time.time()
-    
-    # 테스트 실행
-    test_result = runner.run(suite)
-    
-    # 시간 측정 종료
+    test_suite = discover_tests('app/source/tests/unit')
+    result = run_tests(test_suite)
     end_time = time.time()
     
-    # 결과 저장
-    result.total = test_result.testsRun
-    result.success = result.total - len(test_result.failures) - len(test_result.errors) - len(test_result.skipped)
-    result.failure = len(test_result.failures)
-    result.error = len(test_result.errors)
-    result.skipped = len(test_result.skipped)
-    result.duration = end_time - start_time
-    
-    # 상세 결과 저장
-    for test, error in test_result.failures:
-        result.details.append((str(test), "FAIL", str(error)[:100] + "..." if len(str(error)) > 100 else str(error)))
-    
-    for test, error in test_result.errors:
-        result.details.append((str(test), "ERROR", str(error)[:100] + "..." if len(str(error)) > 100 else str(error)))
-    
-    for test, reason in test_result.skipped:
-        result.details.append((str(test), "SKIPPED", reason))
-    
-    return result
+    print_summary(result, "단위", start_time, end_time)
+    return result.wasSuccessful()
 
-def print_test_structure(unit_files, integration_files):
-    """테스트 구조 출력"""
-    print(f"\n{Fore.CYAN}{'=' * 80}")
-    print(f"{Fore.CYAN}테스트 구조")
-    print(f"{Fore.CYAN}{'=' * 80}")
+def run_integration_tests() -> bool:
+    """통합 테스트 실행"""
+    print(f"\n{Fore.BLUE}통합 테스트 실행 중...{Fore.RESET}\n")
     
-    # 단위 테스트 구조 출력
-    print(f"\n{Fore.YELLOW}Unit Tests:")
-    for file_path in unit_files:
-        rel_path = os.path.relpath(file_path, start=os.path.join(os.getcwd(), "app", "source"))
-        print(f"{Fore.GREEN}{rel_path}")
-        
-        test_cases = extract_test_cases(file_path)
-        for case_name, methods in test_cases:
-            print(f"{Fore.BLUE}  └─ {case_name}")
-            for method in methods:
-                print(f"{Fore.WHITE}     └─ {method}")
+    start_time = time.time()
+    test_suite = discover_tests('app/source/tests/integration')
+    result = run_tests(test_suite)
+    end_time = time.time()
     
-    # 통합 테스트 구조 출력
-    print(f"\n{Fore.YELLOW}Integration Tests:")
-    for file_path in integration_files:
-        rel_path = os.path.relpath(file_path, start=os.path.join(os.getcwd(), "app", "source"))
-        print(f"{Fore.GREEN}{rel_path}")
-        
-        test_cases = extract_test_cases(file_path)
-        for case_name, methods in test_cases:
-            print(f"{Fore.BLUE}  └─ {case_name}")
-            for method in methods:
-                print(f"{Fore.WHITE}     └─ {method}")
+    print_summary(result, "통합", start_time, end_time)
+    return result.wasSuccessful()
 
-def print_results(unit_result, integration_result):
-    """테스트 결과 출력"""
-    print(f"\n{Fore.CYAN}{'=' * 80}")
-    print(f"{Fore.CYAN}테스트 결과 요약")
-    print(f"{Fore.CYAN}{'=' * 80}")
+def run_all_tests() -> bool:
+    """모든 테스트 실행"""
+    print(f"\n{Fore.BLUE}모든 테스트 실행 중...{Fore.RESET}\n")
     
-    # 단위 테스트 결과
-    print(f"\n{Fore.YELLOW}Unit Tests:")
-    print(f"{Fore.WHITE}Total: {unit_result.total}, "
-          f"Success: {Fore.GREEN}{unit_result.success}{Fore.WHITE}, "
-          f"Failure: {Fore.RED}{unit_result.failure}{Fore.WHITE}, "
-          f"Error: {Fore.RED}{unit_result.error}{Fore.WHITE}, "
-          f"Skipped: {Fore.YELLOW}{unit_result.skipped}")
-    print(f"Duration: {unit_result.duration:.2f} seconds")
+    start_time = time.time()
+    test_suite = unittest.TestSuite()
     
-    # 통합 테스트 결과
-    print(f"\n{Fore.YELLOW}Integration Tests:")
-    print(f"{Fore.WHITE}Total: {integration_result.total}, "
-          f"Success: {Fore.GREEN}{integration_result.success}{Fore.WHITE}, "
-          f"Failure: {Fore.RED}{integration_result.failure}{Fore.WHITE}, "
-          f"Error: {Fore.RED}{integration_result.error}{Fore.WHITE}, "
-          f"Skipped: {Fore.YELLOW}{integration_result.skipped}")
-    print(f"Duration: {integration_result.duration:.2f} seconds")
+    # 단위 테스트 추가
+    unit_tests = discover_tests('app/source/tests/unit')
+    test_suite.addTest(unit_tests)
     
-    # 총 결과
-    total = unit_result.total + integration_result.total
-    success = unit_result.success + integration_result.success
-    failure = unit_result.failure + integration_result.failure
-    error = unit_result.error + integration_result.error
-    skipped = unit_result.skipped + integration_result.skipped
-    duration = unit_result.duration + integration_result.duration
+    # 통합 테스트 추가
+    integration_tests = discover_tests('app/source/tests/integration')
+    test_suite.addTest(integration_tests)
     
-    print(f"\n{Fore.YELLOW}Total Summary:")
-    print(f"{Fore.WHITE}Total: {total}, "
-          f"Success: {Fore.GREEN}{success}{Fore.WHITE}, "
-          f"Failure: {Fore.RED}{failure}{Fore.WHITE}, "
-          f"Error: {Fore.RED}{error}{Fore.WHITE}, "
-          f"Skipped: {Fore.YELLOW}{skipped}")
-    print(f"Total Duration: {duration:.2f} seconds")
+    result = run_tests(test_suite)
+    end_time = time.time()
     
-    # 실패 및 에러 상세 정보
-    if unit_result.failure > 0 or unit_result.error > 0 or integration_result.failure > 0 or integration_result.error > 0:
-        print(f"\n{Fore.RED}{'=' * 80}")
-        print(f"{Fore.RED}실패 및 에러 상세 정보")
-        print(f"{Fore.RED}{'=' * 80}")
-        
-        for test, status, message in unit_result.details + integration_result.details:
-            if status in ["FAIL", "ERROR"]:
-                color = Fore.RED
-            else:
-                color = Fore.YELLOW
-                
-            print(f"\n{color}{status}: {test}")
-            print(f"{Fore.WHITE}{message}")
+    print_summary(result, "전체", start_time, end_time)
+    return result.wasSuccessful()
+
+def run_specific_test(test_path: str) -> bool:
+    """특정 테스트 파일 실행"""
+    if not test_path.endswith('.py'):
+        test_path += '.py'
+    
+    if not os.path.isfile(test_path):
+        # tests 디렉토리 내에서 찾기 시도
+        alt_path = os.path.join('app/source/tests', test_path)
+        if os.path.isfile(alt_path):
+            test_path = alt_path
+        else:
+            print(f"{Fore.RED}테스트 파일을 찾을 수 없습니다: {test_path}{Fore.RESET}")
+            return False
+    
+    print(f"\n{Fore.BLUE}특정 테스트 파일 실행 중: {test_path}...{Fore.RESET}\n")
+    
+    dir_path = os.path.dirname(test_path)
+    file_name = os.path.basename(test_path)
+    
+    start_time = time.time()
+    test_suite = discover_tests(dir_path, pattern=file_name)
+    result = run_tests(test_suite)
+    end_time = time.time()
+    
+    print_summary(result, f"파일 ({file_name})", start_time, end_time)
+    return result.wasSuccessful()
+
+def run_repository_tests() -> bool:
+    """Repository 관련 테스트 실행"""
+    print(f"\n{Fore.BLUE}Repository 테스트 실행 중...{Fore.RESET}\n")
+    
+    test_suite = unittest.TestSuite()
+    
+    # 단위 테스트에서 Repository 테스트 추가
+    for file in os.listdir('app/source/tests/unit'):
+        if file.startswith('test_') and file.endswith('_repository.py'):
+            unit_path = os.path.join('app/source/tests/unit', file)
+            unit_tests = discover_tests(os.path.dirname(unit_path), pattern=os.path.basename(unit_path))
+            test_suite.addTest(unit_tests)
+    
+    # 통합 테스트에서 Repository 테스트 추가
+    for file in os.listdir('app/source/tests/integration'):
+        if file.startswith('test_') and ('repository' in file.lower()) and file.endswith('.py'):
+            int_path = os.path.join('app/source/tests/integration', file)
+            int_tests = discover_tests(os.path.dirname(int_path), pattern=os.path.basename(int_path))
+            test_suite.addTest(int_tests)
+    
+    start_time = time.time()
+    result = run_tests(test_suite)
+    end_time = time.time()
+    
+    print_summary(result, "Repository", start_time, end_time)
+    return result.wasSuccessful()
+
+def run_service_tests() -> bool:
+    """Service 관련 테스트 실행"""
+    print(f"\n{Fore.BLUE}Service 테스트 실행 중...{Fore.RESET}\n")
+    
+    test_suite = unittest.TestSuite()
+    
+    # 단위 테스트에서 Service 테스트 추가
+    for file in os.listdir('app/source/tests/unit'):
+        if file.startswith('test_') and ('service' in file.lower()) and file.endswith('.py'):
+            unit_path = os.path.join('app/source/tests/unit', file)
+            unit_tests = discover_tests(os.path.dirname(unit_path), pattern=os.path.basename(unit_path))
+            test_suite.addTest(unit_tests)
+    
+    # 통합 테스트에서 Service 테스트 추가
+    for file in os.listdir('app/source/tests/integration'):
+        if file.startswith('test_') and ('service' in file.lower()) and file.endswith('.py'):
+            int_path = os.path.join('app/source/tests/integration', file)
+            int_tests = discover_tests(os.path.dirname(int_path), pattern=os.path.basename(int_path))
+            test_suite.addTest(int_tests)
+    
+    start_time = time.time()
+    result = run_tests(test_suite)
+    end_time = time.time()
+    
+    print_summary(result, "Service", start_time, end_time)
+    return result.wasSuccessful()
 
 def main():
     """메인 함수"""
-    # 현재 작업 디렉토리 확인
-    cwd = os.getcwd()
+    parser = argparse.ArgumentParser(description='테스트 실행기')
     
-    # 테스트 디렉토리 경로 설정
-    unit_test_dir = os.path.join(cwd, "app", "source", "tests", "unit")
-    integration_test_dir = os.path.join(cwd, "app", "source", "tests", "integration")
+    # 테스트 유형 선택 인자
+    parser.add_argument('-u', '--unit', action='store_true', help='단위 테스트만 실행')
+    parser.add_argument('-i', '--integration', action='store_true', help='통합 테스트만 실행')
+    parser.add_argument('-a', '--all', action='store_true', help='모든 테스트 실행')
+    parser.add_argument('-r', '--repository', action='store_true', help='Repository 관련 테스트 실행')
+    parser.add_argument('-s', '--service', action='store_true', help='Service 관련 테스트 실행')
+    parser.add_argument('-f', '--file', type=str, help='특정 테스트 파일 실행')
     
-    # 테스트 파일 찾기
-    unit_files = find_test_files(unit_test_dir)
-    integration_files = find_test_files(integration_test_dir)
+    args = parser.parse_args()
     
-    # 테스트 구조 출력
-    print_test_structure(unit_files, integration_files)
+    success = True
     
-    # 테스트 실행
-    print(f"\n{Fore.CYAN}{'=' * 80}")
-    print(f"{Fore.CYAN}테스트 실행 중...")
-    print(f"{Fore.CYAN}{'=' * 80}")
+    if args.unit:
+        success = run_unit_tests() and success
+    elif args.integration:
+        success = run_integration_tests() and success
+    elif args.repository:
+        success = run_repository_tests() and success
+    elif args.service:
+        success = run_service_tests() and success
+    elif args.file:
+        success = run_specific_test(args.file) and success
+    elif args.all:
+        success = run_all_tests() and success
+    else:
+        # 기본적으로 모든 테스트 실행
+        success = run_all_tests() and success
     
-    # 단위 테스트 실행
-    print(f"\n{Fore.YELLOW}Running Unit Tests...")
-    unit_result = run_tests(unit_test_dir, "unit")
-    
-    # 통합 테스트 실행
-    print(f"\n{Fore.YELLOW}Running Integration Tests...")
-    integration_result = run_tests(integration_test_dir, "integration")
-    
-    # 결과 출력
-    print_results(unit_result, integration_result)
+    # 성공/실패 상태 코드 반환
+    sys.exit(0 if success else 1)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main() 

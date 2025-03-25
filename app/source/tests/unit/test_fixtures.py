@@ -34,12 +34,14 @@ class TestFixtures(unittest.TestCase):
             signature=None,
             stamp=None,
             bank_name="우리은행",
-            account_number="1002-123-456789"
+            account_number="1002-123-456789",
+            jira_account_id="712020:9373b1a0-2da9-4202-a103-01402f8fa0e5"  # jira_account_id 필드 추가
         )
         
         self.assertEqual(employee.id, "EMP-TEST-001")
         self.assertEqual(employee.name, "홍길동")
         self.assertEqual(employee.email, "hong@example.com")  # email 필드 검증 추가
+        self.assertEqual(employee.jira_account_id, "712020:9373b1a0-2da9-4202-a103-01402f8fa0e5")  # jira_account_id 검증 추가
     
     def test_create_research(self):
         """연구 과제 객체 생성 테스트"""
@@ -48,14 +50,31 @@ class TestFixtures(unittest.TestCase):
             project_name="테스트 프로젝트",
             project_code="TP-2023-001",  # 필수 필드로 추가
             project_period="2023-01-01 ~ 2023-12-31",
-            project_manager="김연구",
-            project_manager_phone="010-9876-5432"
+            project_manager="김연구"
         )
         
         self.assertEqual(research.id, "PROJ-TEST-001")
         self.assertEqual(research.project_name, "테스트 프로젝트")
         self.assertEqual(research.project_code, "TP-2023-001")  # project_code 필드 검증 추가
         # project_number 필드 검증 제거됨
+    
+    def test_create_expert(self):
+        """전문가 객체 생성 테스트"""
+        expert = Expert(
+            id="EXP-TEST-001",
+            name="이전문",
+            affiliation="서울대학교",
+            position="교수",
+            email="expert@example.com",
+            phone="010-1111-2222",
+            specialty="인공지능"
+        )
+        
+        self.assertEqual(expert.id, "EXP-TEST-001")
+        self.assertEqual(expert.name, "이전문")
+        self.assertEqual(expert.affiliation, "서울대학교")
+        self.assertEqual(expert.position, "교수")
+        self.assertEqual(expert.email, "expert@example.com")
 
 if __name__ == '__main__':
     unittest.main() 

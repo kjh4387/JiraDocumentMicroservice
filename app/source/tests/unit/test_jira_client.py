@@ -5,14 +5,14 @@ from app.source.infrastructure.integrations.jira_client import JiraClient
 class TestJiraClient(unittest.TestCase):
     
     @patch.dict('os.environ', {
-        'JIRA_BASE_URL': 'https://test.atlassian.net',
+        'JIRA_BASE_URL': 'https://msimul.atlassian.net',
         'JIRA_USERNAME': 'test@example.com',
         'JIRA_API_TOKEN': 'test-token'
     })
     def test_init_from_env_vars(self):
         """환경변수에서 설정 로드 테스트"""
         client = JiraClient()
-        self.assertEqual(client.jira_base_url, 'https://test.atlassian.net')
+        self.assertEqual(client.jira_base_url, 'https://msimul.atlassian.net')
     
     @patch('requests.get')
     def test_get_issue(self, mock_get):

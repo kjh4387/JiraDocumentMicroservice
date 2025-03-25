@@ -25,11 +25,12 @@ class Employee:
     id: str
     name: str
     email: str  
+    jira_account_id: Optional[str] = None
     department: Optional[str] = None
     position: Optional[str] = None
     phone: Optional[str] = None
     signature: Optional[str] = None
-    stamp: Optional[str] = None  # 추가된 필드: 직원의 직인 정보를 저장
+    stamp: Optional[str] = None 
     bank_name: Optional[str] = None
     account_number: Optional[str] = None
     birth_date: Optional[date] = None

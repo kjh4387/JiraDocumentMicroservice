@@ -32,8 +32,8 @@ class JiraDocumentMapper:
                 'additional_info': self._extract_additional_info(fields)
             }
         except Exception as e:
-            logger.error(f"Failed to map Jira response: {str(e)}", 
-                        issue_key=jira_response.get('key'))
+            issue_key = jira_response.get('key', 'unknown')
+            logger.error(f"Failed to map Jira response for issue {issue_key}: {str(e)}")
             raise MappingError(f"Failed to map Jira response: {str(e)}")
     
     def _extract_document_type(self, fields: Dict[str, Any]) -> str:
@@ -73,14 +73,31 @@ class JiraDocumentMapper:
     def _extract_internal_participants(self, fields: Dict[str, Any]) -> List[Dict[str, str]]:
         """내부 참석자 정보 추출"""
         internal_participants = fields.get('회의_참석자(내부_인원)', [])
+        
+        logger.debug(
+            f"Internal participants data structure: {internal_participants}, type: {type(internal_participants)}"
+        )
+        
         if not internal_participants:
             return []
         
-        return [
-            {'email': participant.get('emailAddress')}
-            for participant in internal_participants
-            if participant.get('emailAddress')
-        ]
+        result = []
+        
+        for participant in internal_participants:
+            logger.debug(f"Processing participant: {participant}, type: {type(participant)}")
+            
+            # accountId를 기본 식별자로 사용
+            if participant.get('accountId'):
+                participant_info = {
+                    'account_id': participant['accountId'],
+                    'display_name': participant.get('displayName', '')
+                }
+                
+                
+                result.append(participant_info)
+        
+        logger.debug(f"Extracted participants: {result}")
+        return result
     
     def _extract_external_participants(self, fields: Dict[str, Any]) -> List[Dict[str, str]]:
         """외부 참석자 정보 추출"""
@@ -175,7 +192,10 @@ if __name__ == "__main__":
     JIRA_URL = os.getenv("JIRA_BASE_URL")
     JIRA_USER = os.getenv("JIRA_USERNAME")
     JIRA_TOKEN = os.getenv("JIRA_API_TOKEN")
-
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
     mapping_provider = ApiJiraFieldMappingProvider(JiraClient(JIRA_URL, JIRA_USER, JIRA_TOKEN))
     field_mapper = JiraFieldMapperimpl(mapping_provider)
     

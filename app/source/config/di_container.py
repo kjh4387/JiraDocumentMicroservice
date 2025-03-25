@@ -16,8 +16,8 @@ from app.source.application.services.data_enricher import DatabaseDataEnricher
 from app.source.application.services.document_service import DocumentService
 from app.source.application.services.signature_service import SignatureService
 from app.source.core.logging import get_logger
-from app.source.infrastructure.integrations.jira_client import JiraClient, ApiJiraFieldMappingProvider, FileJiraFieldMappingProvider, JiraFieldMapperimpl
-
+from app.source.infrastructure.integrations.jira_client import JiraClient
+from app.source.infrastructure.mapping.jira_field_mapper import ApiJiraFieldMappingProvider, FileJiraFieldMappingProvider, JiraFieldMapperimpl
 logger = get_logger(__name__)
 
 class DIContainer:

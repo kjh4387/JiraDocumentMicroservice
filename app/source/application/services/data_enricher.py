@@ -44,16 +44,16 @@ class DatabaseDataEnricher(DataEnricher):
             'travel_list': 'employee_list',
             'applicant_info': 'employee',
             'writer_info': 'employee',
-            
+            '회의_참석자(내부_인원)': 'employee_list', 
+            'jira_account_id': 'employee',
             # Research 관련 키
             'project_id': 'research',
             'project_code': 'research',
             'research_project_info': 'research',
             
-            # Expert 관련 키
             'expert_id': 'expert',
             'expert_info': 'expert',
-            '회의_참석자(내부_인원)': 'employee_list',  # 추가
+            
         }
         
         logger.debug("DatabaseDataEnricher initialized")
@@ -144,7 +144,7 @@ class DatabaseDataEnricher(DataEnricher):
         if domain_type == 'company':
             return ['company_id', 'company_name']
         elif domain_type == 'employee':
-            return ['employee_id', 'email']
+            return ['employee_id', 'email', 'jira_account_id']
         elif domain_type == 'research':
             return ['project_id', 'project_code']
         elif domain_type == 'expert':
@@ -190,6 +190,14 @@ class DatabaseDataEnricher(DataEnricher):
             data['department'] = entity.department
             data['position'] = entity.position
             
+        # jira_account_id가 있으면 name, email 등을 설정
+        elif key == 'jira_account_id' and isinstance(entity, Employee):
+            data['name'] = entity.name
+            data['email'] = entity.email
+            data['department'] = entity.department
+            data['position'] = entity.position
+            data['employee_id'] = entity.id
+            
         # project_id가 있으면 project_code, project_name 등을 설정
         elif key == 'project_id' and isinstance(entity, Research):
             data['project_code'] = entity.project_code
@@ -228,17 +236,23 @@ class DatabaseDataEnricher(DataEnricher):
         if identifier.startswith(('EMP-', 'E-')):
             employee = self.employee_repo.find_by_id(identifier)
             if employee:
-                logger.debug("Employee resolved by ID", id=identifier)
+                logger.debug(f"Employee resolved by ID: {identifier}")
                 return employee
         
         # 이메일로 조회
         if '@' in identifier:
             employee = self.employee_repo.find_by_email(identifier)
             if employee:
-                logger.debug("Employee resolved by email", email=identifier)
+                logger.debug(f"Employee resolved by email: {identifier}")
                 return employee
-                
-        logger.warning("Employee not found", identifier=identifier)
+        
+        # Jira account ID로 조회 (새로 추가)
+        employee = self.employee_repo.find_by_jira_account_id(identifier)
+        if employee:
+            logger.debug(f"Employee resolved by Jira account ID: {identifier}")
+            return employee
+            
+        logger.warning(f"Employee not found: {identifier}")
         return None
     
     def _resolve_research(self, identifier: str) -> Optional[Research]:

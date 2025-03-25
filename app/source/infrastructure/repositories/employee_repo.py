@@ -87,7 +87,27 @@ class EmployeeRepository(Repository[Employee]):
         except Exception as e:
             logger.error("Database error while finding employee by email", email=email, error=str(e))
             raise DatabaseError(f"Failed to find employee with email {email}: {str(e)}")
-    
+        
+    def find_by_jira_account_id(self, account_id: str) -> Optional[Employee]:
+        """Jira account ID로 직원 조회"""
+        logger.debug("Finding employee by Jira account ID", jira_account_id=account_id)
+        query = "SELECT * FROM employees WHERE jira_account_id = %s"
+        
+        try:
+            result = self.db.execute_query(query, (account_id,))
+            
+            if not result:
+                logger.warning("Employee not found", jira_account_id=account_id)
+                return None 
+            
+            employee = Employee(**result[0])
+            logger.debug("Employee found", id=employee.id, jira_account_id=account_id)
+            return employee
+        except Exception as e:
+            logger.error("Database error while finding employee by Jira account ID", jira_account_id=account_id, error=str(e))
+            raise DatabaseError(f"Failed to find employee with Jira account ID {account_id}: {str(e)}")
+        
+
     def save(self, employee: Employee) -> Employee:
         """직원 정보 저장"""
         logger.debug("Saving employee", id=employee.id, name=employee.name)
