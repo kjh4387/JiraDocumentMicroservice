@@ -1,25 +1,264 @@
 from typing import Dict, Any, List, Optional, Callable, Tuple
 from app.source.core.interfaces import DataEnricher, Repository
 from app.source.core.domain import Company, Employee, Research, Expert
-from app.source.core.logging import get_logger
+import logging
+from app.source.infrastructure.repositories.company_repo_v2 import CompanyRepositoryV2
+from app.source.infrastructure.repositories.employee_repo_v2 import EmployeeRepositoryV2
+from app.source.infrastructure.repositories.research_repo_v2 import ResearchRepositoryV2
+from app.source.infrastructure.repositories.expert_repo_v2 import ExpertRepositoryV2
+from app.source.infrastructure.config.field_mapping_config import FieldMappingConfig
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
-class DatabaseDataEnricher(DataEnricher):
-    """데이터베이스를 사용한 문서 데이터 보강"""
+class SelectiveFieldEnricher(DataEnricher):
+    """필드 ID 패턴 기반 데이터 보강 - Jira 응답 구조 유지"""
     
     def __init__(
         self,
-        company_repo: Repository[Company],
-        employee_repo: Repository[Employee],
-        research_repo: Repository[Research],
-        expert_repo: Repository[Expert]
+        company_repo: CompanyRepositoryV2,
+        employee_repo: EmployeeRepositoryV2,
+        research_repo: ResearchRepositoryV2,
+        expert_repo: ExpertRepositoryV2,
+        field_mapping_config: Optional[FieldMappingConfig] = None,
+        logger: Optional[logging.Logger] = None
     ):
         self.company_repo = company_repo
         self.employee_repo = employee_repo
         self.research_repo = research_repo
         self.expert_repo = expert_repo
+        self.field_mapping_config = field_mapping_config or FieldMappingConfig()
+        self.logger = logger or logging.getLogger(__name__)
         
+        # 도메인 객체 타입별 리포지토리 매핑
+        self.repo_by_type = {
+            'company': self.company_repo,
+            'employee': self.employee_repo,
+            'research': self.research_repo,
+            'expert': self.expert_repo
+        }
+        
+        self.logger.debug("SelectiveFieldEnricher initialized with field mapping config")
+        self.logger.debug("Available repositories: %s", list(self.repo_by_type.keys()))
+    
+    def _find_entity(self, repo: Repository, domain_type: str, value: str) -> Optional[Any]:
+        """도메인 객체 조회
+        
+        Args:
+            repo: 리포지토리 객체
+            domain_type: 도메인 객체 타입
+            value: 조회할 값
+            
+        Returns:
+            도메인 객체 또는 None
+        """
+        try:
+            domain_config = self.field_mapping_config.get_domain_config(domain_type)
+            if not domain_config:
+                self.logger.error("No domain config found for type: %s", domain_type)
+                return None
+                
+            query_key = domain_config.query_key
+            self.logger.debug("Finding %s with %s: %s", domain_type, query_key, value)
+            
+            # 리포지토리 메서드 이름 동적 생성 (예: find_by_name, find_by_account_id 등)
+            find_method = f"find_by_{query_key}"
+            if not hasattr(repo, find_method):
+                self.logger.error("Repository %s has no method %s", repo.__class__.__name__, find_method)
+                return None
+            self.logger.debug("Found method %s in repository %s", find_method, repo.__class__.__name__)
+            find_func = getattr(repo, find_method)
+            entity = find_func(value)
+            
+            if entity:
+                self.logger.debug("Found %s: %s", domain_type, entity)
+            else:
+                self.logger.warning("No %s found with %s: %s", domain_type, query_key, value)
+                
+            return entity
+            
+        except Exception as e:
+            self.logger.error("Error finding %s with %s: %s", domain_type, query_key, str(e))
+            return None
+    
+    def _enrich_field(self, fields: Dict[str, Any], field_name: str, field_value: Any, pattern: Any) -> None:
+        """일반 필드 보강
+        
+        Args:
+            fields: 필드 데이터 딕셔너리
+            field_name: 현재 처리 중인 필드 이름
+            field_value: 필드 값
+            pattern: 필드 패턴 설정
+        """
+        try:
+            self.logger.debug("Enriching field: %s (value: %s) with pattern type: %s", 
+                            field_name, field_value, pattern.type)
+            
+            # 도메인 객체 조회
+            repo = self.repo_by_type.get(pattern.type)
+            if not repo:
+                self.logger.error("No repository found for type: %s", pattern.type)
+                return
+            
+            # 필드가 딕셔너리이고 value_key가 지정된 경우 해당 키의 값 사용
+            actual_value = field_value
+            if isinstance(field_value, dict) and hasattr(pattern, 'value_key') and pattern.value_key:
+                if pattern.value_key in field_value:
+                    actual_value = field_value[pattern.value_key]
+                    self.logger.debug("Using value from key '%s': %s", pattern.value_key, actual_value)
+                else:
+                    self.logger.warning("Key '%s' not found in field value: %s", pattern.value_key, field_value)
+                    return
+            
+            # 도메인 객체 조회
+            entity = self._find_entity(repo, pattern.type, str(actual_value))
+            if not entity:
+                return
+            
+            # 필드 이름에서 '_id' 부분을 제거한 접두사 계산
+            prefix = field_name.replace('_id', '')
+            self.logger.debug("Calculated prefix: %s", prefix)
+            
+            # 보강 필드 추가
+            for enrich_field in pattern.enrich_fields:
+                field_key = f"{prefix}_{enrich_field.name}"
+                field_value = getattr(entity, enrich_field.name, None)
+                if field_value is not None:
+                    fields[field_key] = field_value
+                    self.logger.debug("Added enriched field: %s = %s", field_key, field_value)
+                else:
+                    self.logger.debug("No value found for field: %s", enrich_field.name)
+            
+            self.logger.debug("Completed enriching %s info for %s", pattern.type, field_name)
+            
+        except Exception as e:
+            self.logger.error("Error enriching field %s: %s", field_name, str(e))
+    
+    def _enrich_list_field(self, fields: Dict[str, Any], field_name: str, field_value: List[Any], pattern: Any) -> None:
+        """리스트 타입 필드 보강
+        
+        Args:
+            fields: 필드 데이터 딕셔너리
+            field_name: 현재 처리 중인 필드 이름
+            field_value: 필드 값 (리스트)
+            pattern: 필드 패턴 설정
+        """
+        try:
+            self.logger.debug("Enriching list field: %s with %d items", field_name, len(field_value))
+            
+            # 도메인 객체 조회를 위한 리포지토리 가져오기
+            repo = self.repo_by_type.get(pattern.type)
+            if not repo:
+                self.logger.error("No repository found for type: %s", pattern.type)
+                return
+            
+            # 도메인 설정 가져오기
+            domain_config = self.field_mapping_config.get_domain_config(pattern.type)
+            if not domain_config:
+                self.logger.error("No domain config found for type: %s", pattern.type)
+                return
+            
+            # 리스트의 각 항목에 대해 보강 수행
+            for i, item in enumerate(field_value):
+                self.logger.debug("Processing list item %d: %s", i, item)
+                
+                if not isinstance(item, dict):
+                    self.logger.warning("List item %d is not a dictionary, skipping", i)
+                    continue
+                
+                # ID 필드가 있는지 확인
+                if domain_config.id_field not in item:
+                    self.logger.warning("No %s found in list item %d", domain_config.id_field, i)
+                    continue
+                
+                # 도메인 객체 조회
+                entity = self._find_entity(repo, pattern.type, str(item[domain_config.id_field]))
+                if not entity:
+                    continue
+                
+                # 보강 필드 추가
+                for enrich_field in pattern.enrich_fields:
+                    field_value = getattr(entity, enrich_field.name, None)
+                    if field_value is not None:
+                        item[enrich_field.name] = field_value
+                        self.logger.debug("Added enriched field: %s = %s", enrich_field.name, field_value)
+                    else:
+                        self.logger.debug("No value found for field: %s", enrich_field.name)
+            
+            self.logger.debug("Completed enriching list field: %s", field_name)
+            
+        except Exception as e:
+            self.logger.error("Error enriching list field %s: %s", field_name, str(e))
+
+    def enrich(self, document_type: str, data: Dict[str, Any]) -> Dict[str, Any]:
+        """문서 데이터 보강
+        
+        Args:
+            document_type: 문서 타입 (사용하지 않음)
+            data: 보강할 데이터
+            
+        Returns:
+            보강된 데이터
+        """
+        try:
+            self.logger.debug("Starting data enrichment")
+            
+            # 모든 필드 패턴 가져오기
+            field_patterns = self.field_mapping_config.get_all_field_patterns()
+            if not field_patterns:
+                self.logger.warning("No field patterns found in configuration")
+                return data
+            
+            self.logger.debug("Field patterns loaded: %d patterns", len(field_patterns))
+            
+            # 데이터 복사본 생성
+            enriched_data = data.copy()
+            
+            # 필드에 직접 접근할지 또는 'fields' 키를 통해 접근할지 결정
+            fields_dict = enriched_data.get('fields', enriched_data)
+            
+            # 각 필드에 대해 보강 수행
+            for field_name, field_value in fields_dict.items():
+                # 필드 이름이 패턴 목록에 있는지 확인
+                pattern = field_patterns.get(field_name)
+                if not pattern:
+                    self.logger.debug("No pattern found for field: %s", field_name)
+                    continue
+                
+                self.logger.debug("Pattern found for field %s: type=%s, is_list=%s, value_key=%s", 
+                               field_name, pattern.type, pattern.is_list, pattern.value_key)
+                
+                # 리스트 타입 필드 처리
+                if pattern.is_list and isinstance(field_value, list):
+                    self._enrich_list_field(fields_dict, field_name, field_value, pattern)
+                # 일반 필드 처리
+                else:
+                    self._enrich_field(fields_dict, field_name, field_value, pattern)
+            
+            self.logger.debug("Completed data enrichment")
+            return enriched_data
+            
+        except Exception as e:
+            self.logger.error("Error during data enrichment: %s", str(e))
+            return data
+
+
+# 기존 클래스 유지하되 deprecated 표시
+class DatabaseDataEnricher(DataEnricher):
+    """(Deprecated) 기존 데이터베이스 보강 로직 - 이전 버전과의 호환성을 위해 유지"""
+    
+    def __init__(
+        self,
+        company_repo: CompanyRepositoryV2,
+        employee_repo: EmployeeRepositoryV2,
+        research_repo: ResearchRepositoryV2,
+        expert_repo: ExpertRepositoryV2,
+        logger: Optional[logging.Logger] = None
+    ):
+        self.company_repo = company_repo
+        self.employee_repo = employee_repo
+        self.research_repo = research_repo
+        self.expert_repo = expert_repo
+        self.logger = logger or logging.getLogger(__name__)
         # 도메인 객체별 조회 방법 정의
         self.domain_resolvers = {
             'company': self._resolve_company,
@@ -40,12 +279,13 @@ class DatabaseDataEnricher(DataEnricher):
             'employee_id': 'employee',
             'email': 'employee',
             'participants': 'employee_list',
+            'internal_participants': 'employee_list',
             'approval_list': 'employee_list',
             'travel_list': 'employee_list',
             'applicant_info': 'employee',
             'writer_info': 'employee',
-            '회의_참석자(내부_인원)': 'employee_list', 
             'jira_account_id': 'employee',
+            
             # Research 관련 키
             'project_id': 'research',
             'project_code': 'research',
@@ -53,233 +293,14 @@ class DatabaseDataEnricher(DataEnricher):
             
             'expert_id': 'expert',
             'expert_info': 'expert',
-            
         }
         
-        logger.debug("DatabaseDataEnricher initialized")
-    
+        self.logger.warning("Using deprecated DatabaseDataEnricher - please migrate to SelectiveFieldEnricher")
+        
     def enrich(self, document_type: str, data: Dict[str, Any]) -> Dict[str, Any]:
-        """문서 데이터 보강 - 범용적인 방식으로 구현"""
-        logger.debug("Enriching document data", document_type=document_type)
+        """기존 enrich 메서드로 호환성 유지를 위해 그대로 둠
+        하지만 더 이상 사용되지 않으므로 경고 로그 출력
+        """
+        self.logger.warning("Using deprecated DatabaseDataEnricher.enrich method. Consider migrating to SelectiveFieldEnricher.")
         
-        # 데이터 복사본 생성
-        enriched_data = data.copy()
-        
-        # 데이터를 재귀적으로 순회하며 보강
-        self._enrich_recursive(enriched_data)
-        
-        logger.debug("Document data enriched successfully", document_type=document_type)
-        return enriched_data
-    
-    def _enrich_recursive(self, data: Any, parent_key: str = None) -> None:
-        """데이터를 재귀적으로 순회하며 보강"""
-        # 딕셔너리인 경우
-        if isinstance(data, dict):
-            # 현재 딕셔너리에 대한 보강 처리
-            self._enrich_dict(data, parent_key)
-            
-            # 중첩된 딕셔너리와 리스트에 대한 재귀 처리
-            for key, value in list(data.items()):
-                self._enrich_recursive(value, key)
-                
-        # 리스트인 경우
-        elif isinstance(data, list):
-            # 리스트의 각 항목에 대해 재귀 처리
-            for item in data:
-                self._enrich_recursive(item, parent_key)
-    
-    def _enrich_dict(self, data: Dict[str, Any], parent_key: str = None) -> None:
-        """딕셔너리 데이터 보강"""
-        # 키와 패턴 매칭 확인
-        for key in list(data.keys()):
-            if key in self.key_patterns:
-                domain_type = self.key_patterns[key]
-                
-                # 단일 객체 보강
-                if domain_type in self.domain_resolvers and not domain_type.endswith('_list'):
-                    self._enrich_single_entity(data, key, domain_type)
-        
-        # 전체 딕셔너리가 특정 도메인 객체를 나타내는 경우
-        if parent_key in self.key_patterns:
-            domain_type = self.key_patterns[parent_key]
-            
-            # 리스트 객체 보강
-            if domain_type.endswith('_list'):
-                # 리스트 항목 각각을 보강할 필요는 없음 (재귀에서 처리됨)
-                pass
-            # 단일 객체이고 딕셔너리 자체가 객체 데이터인 경우
-            elif domain_type in self.domain_resolvers:
-                self._enrich_entity_dict(data, domain_type)
-    
-    def _enrich_single_entity(self, data: Dict[str, Any], key: str, domain_type: str) -> None:
-        """단일 ID 또는 이름 필드로 엔티티 조회 및 보강"""
-        # ID나 이름 같은 단일 값인 경우 (예: "company_id": "COMP-001")
-        if key in data and isinstance(data[key], str):
-            resolver = self.domain_resolvers[domain_type]
-            entity = resolver(data[key])
-            
-            if entity:
-                # 관련된 다른 키 존재 여부 확인 (예: company_id가 있으면 company_name 등도 설정)
-                self._update_related_fields(data, entity, key)
-    
-    def _enrich_entity_dict(self, data: Dict[str, Any], domain_type: str) -> None:
-        """엔티티를 나타내는 딕셔너리 보강"""
-        resolver = self.domain_resolvers[domain_type]
-        entity = None
-        
-        # 가능한 식별자 키 확인 (company_id, company_name, email 등)
-        identifying_keys = self._get_identifying_keys(domain_type)
-        
-        # 식별자 키 중 하나라도 있으면 엔티티 조회
-        for id_key in identifying_keys:
-            if id_key in data and data[id_key]:
-                entity = resolver(data[id_key])
-                if entity:
-                    # 엔티티 데이터로 딕셔너리 업데이트
-                    self._update_with_entity_data(data, entity, id_key)
-                    break
-    
-    def _get_identifying_keys(self, domain_type: str) -> List[str]:
-        """도메인 유형에 따른 식별자 키 목록 반환"""
-        if domain_type == 'company':
-            return ['company_id', 'company_name']
-        elif domain_type == 'employee':
-            return ['employee_id', 'email', 'jira_account_id']
-        elif domain_type == 'research':
-            return ['project_id', 'project_code']
-        elif domain_type == 'expert':
-            return ['expert_id']
-        return []
-    
-    def _update_with_entity_data(self, data: Dict[str, Any], entity: Any, used_key: str) -> None:
-        """엔티티 데이터로 딕셔너리 업데이트"""
-        # ID 키 설정 (엔티티 타입에 따라 다름)
-        id_key = self._get_id_key_for_entity(entity)
-        if id_key and id_key != used_key:
-            data[id_key] = entity.id
-        
-        # 엔티티의 모든 속성을 딕셔너리에 복사
-        for key, value in entity.__dict__.items():
-            if key != 'id' and value is not None and key not in data:
-                data[key] = value
-    
-    def _get_id_key_for_entity(self, entity: Any) -> Optional[str]:
-        """엔티티 타입에 따른 ID 키 반환"""
-        if isinstance(entity, Company):
-            return 'company_id'
-        elif isinstance(entity, Employee):
-            return 'employee_id'
-        elif isinstance(entity, Research):
-            return 'project_id'
-        elif isinstance(entity, Expert):
-            return 'expert_id'
-        return None
-    
-    def _update_related_fields(self, data: Dict[str, Any], entity: Any, key: str) -> None:
-        """관련 필드 업데이트 (예: ID가 있을 때 이름 필드 등 추가)"""
-        # company_id가 있으면 company_name 등을 설정
-        if key == 'company_id' and isinstance(entity, Company):
-            data['company_name'] = entity.company_name
-            data['biz_id'] = entity.biz_id
-            # 다른 필드 추가 가능
-            
-        # employee_id가 있으면 name, email 등을 설정
-        elif key == 'employee_id' and isinstance(entity, Employee):
-            data['name'] = entity.name
-            data['email'] = entity.email
-            data['department'] = entity.department
-            data['position'] = entity.position
-            
-        # jira_account_id가 있으면 name, email 등을 설정
-        elif key == 'jira_account_id' and isinstance(entity, Employee):
-            data['name'] = entity.name
-            data['email'] = entity.email
-            data['department'] = entity.department
-            data['position'] = entity.position
-            data['employee_id'] = entity.id
-            
-        # project_id가 있으면 project_code, project_name 등을 설정
-        elif key == 'project_id' and isinstance(entity, Research):
-            data['project_code'] = entity.project_code
-            data['project_name'] = entity.project_name
-            data['project_period'] = entity.project_period
-            data['project_manager'] = entity.project_manager
-            
-        # expert_id가 있으면 name 등을 설정
-        elif key == 'expert_id' and isinstance(entity, Expert):
-            data['name'] = entity.name
-            data['affiliation'] = entity.affiliation
-            data['position'] = entity.position
-    
-    # 도메인 객체 조회 메서드들
-    def _resolve_company(self, identifier: str) -> Optional[Company]:
-        """회사 정보 조회"""
-        # ID로 조회
-        if identifier.startswith(('COMP-', 'C-')):
-            company = self.company_repo.find_by_id(identifier)
-            if company:
-                logger.debug("Company resolved by ID", id=identifier)
-                return company
-        
-        # 이름으로 조회
-        company = self.company_repo.find_by_name(identifier)
-        if company:
-            logger.debug("Company resolved by name", name=identifier)
-            return company
-            
-        logger.warning("Company not found", identifier=identifier)
-        return None
-    
-    def _resolve_employee(self, identifier: str) -> Optional[Employee]:
-        """직원 정보 조회"""
-        # ID로 조회
-        if identifier.startswith(('EMP-', 'E-')):
-            employee = self.employee_repo.find_by_id(identifier)
-            if employee:
-                logger.debug(f"Employee resolved by ID: {identifier}")
-                return employee
-        
-        # 이메일로 조회
-        if '@' in identifier:
-            employee = self.employee_repo.find_by_email(identifier)
-            if employee:
-                logger.debug(f"Employee resolved by email: {identifier}")
-                return employee
-        
-        # Jira account ID로 조회 (새로 추가)
-        employee = self.employee_repo.find_by_jira_account_id(identifier)
-        if employee:
-            logger.debug(f"Employee resolved by Jira account ID: {identifier}")
-            return employee
-            
-        logger.warning(f"Employee not found: {identifier}")
-        return None
-    
-    def _resolve_research(self, identifier: str) -> Optional[Research]:
-        """연구 과제 정보 조회"""
-        # ID로 조회
-        if identifier.startswith(('RESEARCH-', 'R-')):
-            research = self.research_repo.find_by_id(identifier)
-            if research:
-                logger.debug("Research project resolved by ID", id=identifier)
-                return research
-        
-        # 코드로 조회
-        research = self.research_repo.find_by_project_code(identifier)
-        if research:
-            logger.debug("Research project resolved by code", code=identifier)
-            return research
-            
-        logger.warning("Research project not found", identifier=identifier)
-        return None
-    
-    def _resolve_expert(self, identifier: str) -> Optional[Expert]:
-        """전문가 정보 조회"""
-        # ID로 조회
-        expert = self.expert_repo.find_by_id(identifier)
-        if expert:
-            logger.debug("Expert resolved by ID", id=identifier)
-            return expert
-            
-        logger.warning("Expert not found", identifier=identifier)
-        return None
+        return data

@@ -5,9 +5,9 @@
 """
 
 from typing import Dict, List, Any, Optional, Tuple, Set
-from app.source.core.logging import get_logger
+import logging
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 class ColumnDefinition:
     """데이터베이스 컬럼 정의"""
@@ -44,7 +44,7 @@ class TableSchema:
     def __init__(self, table_name: str, columns: List[ColumnDefinition], logger=None):
         self.table_name = table_name
         self.columns = columns
-        self.logger = logger or get_logger(__name__)
+        self.logger = logger or logging.getLogger(__name__)
         self._validate_schema()
         self.logger.debug(f"TableSchema created for {table_name}")
         
@@ -218,7 +218,7 @@ class SchemaRegistry:
     def get_logger(cls):
         """로거 가져오기"""
         if cls._logger is None:
-            cls._logger = get_logger(__name__)
+            cls._logger = logging.getLogger(__name__)
         return cls._logger
     
     @classmethod

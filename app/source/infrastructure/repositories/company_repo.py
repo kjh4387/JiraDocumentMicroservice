@@ -3,39 +3,40 @@ from app.source.core.interfaces import Repository
 from app.source.core.domain import Company
 from app.source.core.exceptions import EntityNotFoundError, DatabaseError
 from app.source.infrastructure.persistence.db_connection import DatabaseConnection
-from app.source.core.logging import get_logger
+import logging
 
-logger = get_logger(__name__)
+
 
 class CompanyRepository(Repository[Company]):
     """회사 정보 저장소"""
     
-    def __init__(self, db_connection: DatabaseConnection):
+    def __init__(self, db_connection: DatabaseConnection, logger: Optional[logging.Logger] = None):
         self.db = db_connection
-        logger.debug("CompanyRepository initialized")
+        self.logger = logger or logging.getLogger(__name__)
+        self.logger.debug("CompanyRepository initialized")
     
     def find_by_id(self, id: str) -> Optional[Company]:
         """ID로 회사 조회"""
-        logger.debug("Finding company by ID", id=id)
+        self.logger.debug("Finding company by ID", id=id)
         query = "SELECT * FROM companies WHERE id = %s"
         
         try:
             result = self.db.execute_query(query, (id,))
             
             if not result:
-                logger.warning("Company not found", id=id)
+                self.logger.warning("Company not found", id=id)
                 return None
             
             company = Company(**result[0])
-            logger.debug("Company found", id=id, company_name=company.company_name)
+            self.logger.debug("Company found", id=id, company_name=company.company_name)
             return company
         except Exception as e:
-            logger.error("Database error while finding company", id=id, error=str(e))
+            self.logger.error("Database error while finding company", id=id, error=str(e))
             raise DatabaseError(f"Failed to find company with ID {id}: {str(e)}")
     
     def find_by_criteria(self, criteria: Dict[str, Any]) -> List[Company]:
         """조건에 맞는 회사 목록 조회"""
-        logger.debug("Finding companies by criteria", criteria=criteria)
+        self.logger.debug("Finding companies by criteria", criteria=criteria)
         conditions = []
         params = []
         
@@ -49,33 +50,33 @@ class CompanyRepository(Repository[Company]):
         try:
             results = self.db.execute_query(query, tuple(params))
             companies = [Company(**row) for row in results]
-            logger.debug("Companies found", count=len(companies))
+            self.logger.debug("Companies found", count=len(companies))
             return companies
         except Exception as e:
-            logger.error("Database error while finding companies by criteria", criteria=criteria, error=str(e))
+            self.logger.error("Database error while finding companies by criteria", criteria=criteria, error=str(e))
             raise DatabaseError(f"Failed to find companies by criteria: {str(e)}")
     
     def find_by_name(self, name: str) -> Optional[Company]:
         """회사명으로 회사 조회"""
-        logger.debug("Finding company by name", name=name)
+        self.logger.debug("Finding company by name", name=name)
         query = "SELECT * FROM companies WHERE company_name = %s"
         try:
             result = self.db.execute_query(query, (name,))
             
             if not result:
-                logger.warning("Company not found", name=name)
+                self.logger.warning("Company not found", name=name)
                 return None
             
             company = Company(**result[0])
-            logger.debug("Company found", id=company.id, company_name=company.company_name)
+            self.logger.debug("Company found", id=company.id, company_name=company.company_name)
             return company
         except Exception as e:
-            logger.error("Database error while finding company by name", name=name, error=str(e))
+            self.logger.error("Database error while finding company by name", name=name, error=str(e))
             raise DatabaseError(f"Failed to find company by name {name}: {str(e)}")
     
     def save(self, company: Company) -> Company:
         """회사 정보 저장"""
-        logger.debug("Saving company", id=company.id, company_name=company.company_name)
+        self.logger.debug("Saving company", id=company.id, company_name=company.company_name)
         
         # 기존 회사 확인
         existing = self.find_by_id(company.id)
@@ -95,9 +96,9 @@ class CompanyRepository(Repository[Company]):
             )
             try:
                 self.db.execute_query(query, params)
-                logger.info("Company updated", id=company.id, company_name=company.company_name)
+                self.logger.info("Company updated", id=company.id, company_name=company.company_name)
             except Exception as e:
-                logger.error("Database error while updating company", id=company.id, error=str(e))
+                self.logger.error("Database error while updating company", id=company.id, error=str(e))
                 raise DatabaseError(f"Failed to update company {company.id}: {str(e)}")
         else:
             # 삽입
@@ -112,29 +113,29 @@ class CompanyRepository(Repository[Company]):
             )
             try:
                 self.db.execute_query(query, params)
-                logger.info("Company created", id=company.id, company_name=company.company_name)
+                self.logger.info("Company created", id=company.id, company_name=company.company_name)
             except Exception as e:
-                logger.error("Database error while creating company", id=company.id, error=str(e))
+                self.logger.error("Database error while creating company", id=company.id, error=str(e))
                 raise DatabaseError(f"Failed to create company {company.id}: {str(e)}")
         
         return company
     
     def delete(self, id: str) -> bool:
         """회사 정보 삭제"""
-        logger.debug("Deleting company", id=id)
+        self.logger.debug("Deleting company", id=id)
         
         # 기존 회사 확인
         existing = self.find_by_id(id)
         
         if not existing:
-            logger.warning("Cannot delete: Company not found", id=id)
+            self.logger.warning("Cannot delete: Company not found", id=id)
             return False
         
         query = "DELETE FROM companies WHERE id = %s"
         try:
             self.db.execute_query(query, (id,))
-            logger.info("Company deleted", id=id)
+            self.logger.info("Company deleted", id=id)
             return True
         except Exception as e:
-            logger.error("Database error while deleting company", id=id, error=str(e))
+            self.logger.error("Database error while deleting company", id=id, error=str(e))
             raise DatabaseError(f"Failed to delete company {id}: {str(e)}")

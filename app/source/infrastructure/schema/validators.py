@@ -4,32 +4,32 @@ from jsonschema import validate
 from typing import Dict, Any, Optional, Tuple
 from app.source.core.interfaces import SchemaValidator
 from app.source.core.exceptions import ValidationError, SchemaError
-from app.source.core.logging import get_logger
 from app.source.config.settings import get_settings
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
-
-logger = get_logger(__name__)
+import logging
 
 class JsonSchemaValidator(SchemaValidator):
     """JSON 스키마를 사용한 문서 데이터 검증"""
     
-    def __init__(self, schema_path: str):
+    def __init__(self, schema_path: str, logger: logging.Logger = None):
         """
         Args:
             schema_path: JSON 스키마 파일 경로
+            logger: 로거 인스턴스
         """
         self.schema_path = schema_path
+        self.logger = logger or logging.getLogger(__name__)
         self.schema = self._load_schema()
-        
+
     def _load_schema(self) -> Dict[str, Any]:
         """스키마 파일 로드"""
         try:
             with open(self.schema_path, 'r', encoding='utf-8') as file:
                 schema = json.load(file)
-            logger.info("Schema loaded successfully", schema_path=self.schema_path)
+            self.logger.info("Schema loaded successfully", schema_path=self.schema_path)
             return schema
         except Exception as e:
-            logger.error("Failed to load schema", error=str(e), schema_path=self.schema_path)
+            self.logger.error("Failed to load schema", error=str(e), schema_path=self.schema_path)
             raise SchemaError(f"Failed to load schema from {self.schema_path}: {str(e)}")
     
     def _validate_against_schema(self, data: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
@@ -55,11 +55,11 @@ class JsonSchemaValidator(SchemaValidator):
                 else:
                     error_message = f"검증 오류: {e.message}"
                 
-                logger.warning("Schema validation failed", path=error_path, message=e.message)
+                self.logger.warning("Schema validation failed", path=error_path, message=e.message)
                 return False, error_message
                 
         except Exception as e:
-            logger.error("Unexpected error during schema validation", error=str(e))
+            self.logger.error("Unexpected error during schema validation", error=str(e))
             return False, f"스키마 검증 중 오류 발생: {str(e)}"
 
     def validate(self, data: Dict[str, Any]) -> Tuple[bool, Optional[str]]:

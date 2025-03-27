@@ -5,12 +5,12 @@
 from typing import Dict, List, Any, Optional
 from app.source.core.domain import Company
 from app.source.core.exceptions import DatabaseError
-from app.source.core.logging import get_logger
+import logging
 from app.source.infrastructure.persistence.db_connection import DatabaseConnection
 from app.source.infrastructure.persistence.generic_repository import GenericRepository
 from app.source.infrastructure.persistence.schema_definition import SchemaRegistry, create_company_schema
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 class CompanyRepositoryV2(GenericRepository[Company]):
     """회사 저장소 - 제네릭 레포지토리 기반"""
@@ -22,7 +22,7 @@ class CompanyRepositoryV2(GenericRepository[Company]):
             db_connection: 데이터베이스 연결 객체
             logger: 로거 인스턴스 (기본값: None, None인 경우 기본 로거 사용)
         """
-        self.logger = logger or get_logger(__name__)
+        self.logger = logger or logging.getLogger(__name__)
         # 스키마 가져오기 또는 생성
         schema = SchemaRegistry.get("companies") or create_company_schema()
         super().__init__(db_connection, schema, Company, self.logger)
@@ -47,7 +47,7 @@ class CompanyRepositoryV2(GenericRepository[Company]):
         except Exception as e:
             if not isinstance(e, DatabaseError):
                 error_msg = "Database error while finding company by name"
-                self.logger.error(error_msg, company_name=company_name, error=str(e))
+                self.logger.error("%s: %s (company_name=%s)", error_msg, str(e), company_name)
                 raise DatabaseError(f"{error_msg}: {str(e)}")
             raise e
     
@@ -73,24 +73,22 @@ class CompanyRepositoryV2(GenericRepository[Company]):
             search_pattern = f"%{keywords}%"
             params = (search_pattern, search_pattern)
             
-            self.logger.debug("Searching companies", keywords=keywords)
+            self.logger.debug("Searching companies with keywords: %s", keywords)
             
             result = self.db.execute_query(query, params)
             
             if not result:
-                self.logger.warning("No companies found in search", keywords=keywords)
+                self.logger.warning("No companies found in search with keywords: %s", keywords)
                 return []
             
             companies = [self._map_to_entity(row) for row in result]
-            self.logger.debug("Companies found in search", 
-                            keywords=keywords, 
-                            count=len(companies))
+            self.logger.debug("Companies found in search: %d (keywords=%s)", len(companies), keywords)
             
             return companies
             
         except Exception as e:
             error_msg = "Database error while searching companies"
-            self.logger.error(error_msg, keywords=keywords, error=str(e))
+            self.logger.error("%s: %s (keywords=%s)", error_msg, str(e), keywords)
             raise DatabaseError(f"{error_msg}: {str(e)}")
     
     def count(self) -> int:
@@ -108,5 +106,5 @@ class CompanyRepositoryV2(GenericRepository[Company]):
             return result[0]['count'] if result else 0
         except Exception as e:
             error_msg = "Database error while counting companies"
-            self.logger.error(error_msg, error=str(e))
+            self.logger.error("%s: %s", error_msg, str(e))
             raise DatabaseError(f"{error_msg}: {str(e)}") 

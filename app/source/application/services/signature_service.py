@@ -3,21 +3,22 @@ import base64
 from typing import Optional
 from app.source.core.interfaces import Repository
 from app.source.core.domain import Employee
-from app.source.core.logging import get_logger
+import logging
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 class SignatureService:
     """서명 이미지 관리 서비스"""
     
-    def __init__(self, signature_dir: str, employee_repo: Repository[Employee]):
+    def __init__(self, signature_dir: str, employee_repo: Repository[Employee], logger: Optional[logging.Logger] = None):
         """초기화"""
         self.signature_dir = signature_dir
         self.employee_repo = employee_repo
+        self.logger = logger or logging.getLogger(__name__)
         
         # 서명 디렉토리 생성
         os.makedirs(signature_dir, exist_ok=True)
-        logger.debug("SignatureService initialized", signature_dir=signature_dir)
+        self.logger.debug("SignatureService initialized", signature_dir=signature_dir)
     
     def save_signature(self, employee_id: str, signature_data: str) -> str:
         """서명 이미지 저장"""

@@ -1,17 +1,18 @@
 from typing import Dict, Any
 import os
 import json
-from app.source.core.logging import get_logger
+import logging
 from app.source.core.interfaces import JiraFieldMappingProvider, JiraFieldMapper
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 class ApiJiraFieldMappingProvider(JiraFieldMappingProvider):
     """Jira API에서 필드 매핑 데이터를 가져오는 제공자"""
     
-    def __init__(self, jira_api_client):
+    def __init__(self, jira_api_client, logger: logging.Logger = None):
         self.jira_api_client = jira_api_client
         self.field_mappings = {}
         self.initialized = False
+        self.logger = logger or logging.getLogger(__name__)
     
     def get_field_mapping(self) -> Dict[str, str]:
         if not self.initialized:
@@ -34,10 +35,10 @@ class ApiJiraFieldMappingProvider(JiraFieldMappingProvider):
             
             self.field_mappings = mappings
             self.initialized = True
-            logger.info("Field mappings loaded from Jira API")
+            self.logger.info("Field mappings loaded from Jira API")
             
         except Exception as e:
-            logger.error(f"Failed to load field mappings from API: {str(e)}")
+            self.logger.error("Failed to load field mappings from API: %s", str(e))
             # 실패 시 빈 매핑 사용
             self.field_mappings = {}
             self.initialized = True
@@ -53,13 +54,14 @@ class ApiJiraFieldMappingProvider(JiraFieldMappingProvider):
 class FileJiraFieldMappingProvider(JiraFieldMappingProvider):
     """파일에서 필드 매핑 데이터를 로드하는 제공자"""
     
-    def __init__(self, file_path=None):
+    def __init__(self, file_path=None, logger: logging.Logger = None):
         self.file_path = file_path or os.environ.get(
             'JIRA_FIELD_MAPPING', 
             '/workspace/app/config/jira_field_mapping.json'
         )
         self.field_mappings = {}
         self.initialized = False
+        self.logger = logger or logging.getLogger(__name__)
     
     def get_field_mappings(self) -> Dict[str, str]:
         if not self.initialized:
@@ -71,23 +73,24 @@ class FileJiraFieldMappingProvider(JiraFieldMappingProvider):
             if os.path.exists(self.file_path):
                 with open(self.file_path, 'r') as f:
                     self.field_mappings = json.load(f)
-                logger.info(f"Field mappings loaded from {self.file_path}")
+                self.logger.info("Field mappings loaded from %s", self.file_path)
             else:
-                logger.warning(f"Mapping file not found: {self.file_path}")
+                self.logger.warning("Mapping file not found: %s", self.file_path)
                 self.field_mappings = {}
             
             self.initialized = True
             
         except Exception as e:
-            logger.error(f"Failed to load field mappings from file: {str(e)}")
+            self.logger.error("Failed to load field mappings from file: %s", str(e))
             self.field_mappings = {}
             self.initialized = True
 
 class JiraFieldMapperimpl(JiraFieldMapper):
     """Jira 필드 ID를 사람이 읽을 수 있는 이름으로 매핑"""
     
-    def __init__(self, mapping_provider: JiraFieldMappingProvider = None):
+    def __init__(self, mapping_provider: JiraFieldMappingProvider = None, logger: logging.Logger = None):
         self.mapping_provider = mapping_provider
+        self.logger = logger or logging.getLogger(__name__)
     
     def set_mapping_provider(self, provider: JiraFieldMappingProvider):
         """런타임에 매핑 제공자 변경"""

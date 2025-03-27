@@ -137,15 +137,15 @@
                     <tbody>
                         <tr>
                             <td style="width: 30mm;">날 짜</td>
-                            <td>{{metadata.date_issued}}</td>
+                            <td>{{date_issued|default(created|default(''), true)}}</td>
                         </tr>
                         <tr> 
                             <td>수 신</td>
-                            <td>{{metadata.receiver}}</td>
+                            <td>{{receiver|default(summary|default(''), true)}}</td>
                         </tr>
                         <tr>
                             <td>참 조</td>
-                            <td></td>
+                            <td>{{reference|default('', true)}}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -158,19 +158,19 @@
                     <tbody>
                         <tr>
                             <td style="width: 25mm;">사업장 소재지</td>
-                            <td>{{supplier_info.address}}</td>
+                            <td>{{사업자_선택_address|default('', true)}}</td>
                         </tr>
                         <tr> 
                             <td>상호</td>
-                            <td>{{supplier_info.company_name}}</td>
+                            <td>{{사업자_선택_company_name|default('', true)}}</td>
                         </tr>
                         <tr>
                             <td>대표자 성명</td>
-                            <td>{{supplier_info.rep_name}}</td>
+                            <td>{{사업자_선택_rep_name|default('', true)}}</td>
                         </tr>
                         <tr>
                             <td>전화번호</td>
-                            <td>{{ supplier_info.phone}}</td>
+                            <td>{{사업자_선택_phone|default('', true)}}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -194,8 +194,8 @@
                 {% set total_amount = namespace(value=0) %}
                 {% set total_vat = namespace(value=0) %}
                 {% set grand_total = namespace(value=0) %}
-                {% for item in  item_list %}
-                    {% set item_amount = (item.unit_price|int) * (item.quantity|int) %}
+                {% for item in 견적서_내역_data|default([], true) %}
+                    {% set item_amount = (item.단가|default(0)|int) * (item.수량|default(0)|int) %}
                     {% set item_vat = ((item_amount * 0.1)|round)|int %}
                     {% set item_total = item_amount + item_vat %}
                     
@@ -204,10 +204,10 @@
                     {% set grand_total.value = grand_total.value + item_total %}
                 <tr>
                     <td>{{ loop.index }}</td>
-                    <td>{{ item.name }}</td>
+                    <td>{{ item.품목 }}</td>
                     <td>EA</td>
-                    <td>{{ item.quantity|number_aligned }}</td>
-                    <td>{{ item.unit_price|currency_aligned }}</td>
+                    <td>{{ item.수량 }}</td>
+                    <td>{{ item.단가 }}</td>
                     <td>{{ item_amount|currency_aligned }}</td>
                     <td>{{ item_vat|currency_aligned }}</td>
                     <td>{{ item_total|currency_aligned }}</td>

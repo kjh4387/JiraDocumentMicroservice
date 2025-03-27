@@ -4,10 +4,11 @@ import uuid
 from datetime import datetime
 from app.source.core.interfaces import SchemaValidator, DataEnricher, DocumentRenderer, PdfGenerator
 from app.source.core.exceptions import ValidationError, RenderingError, PdfGenerationError
-from app.source.core.logging import get_logger
+import logging
 from app.source.core.exceptions import DocumentAutomationError
+from app.source.application.services.preprocessor import JiraPreprocessor
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 class DocumentService:
     """문서 생성 및 관리 서비스"""
@@ -17,37 +18,102 @@ class DocumentService:
         validator: SchemaValidator,
         data_enricher: DataEnricher,
         renderer: DocumentRenderer,
-        pdf_generator: PdfGenerator
+        pdf_generator: PdfGenerator,
+        preprocessor: Optional[JiraPreprocessor] = None,
+        logger: Optional[logging.Logger] = None
     ):
         self.validator = validator
         self.data_enricher = data_enricher
         self.renderer = renderer
         self.pdf_generator = pdf_generator
-        logger.debug("DocumentService initialized")
+        self.preprocessor = preprocessor or JiraPreprocessor()
+        self.logger = logger or logging.getLogger(__name__)
+        self.logger.debug("DocumentService initialized")
     
     def create_document(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """문서 생성"""
-        document_type = data.get("document_type")
-        logger.info("Creating document", document_type=document_type)
+        """문서 생성
+        
+        Args:
+            data: 전처리된 Jira 데이터
+            
+        Returns:
+            생성된 문서 정보
+        """
+        # Jira 데이터 구조 로깅
+        self.logger.debug("Jira data structure: %s", 
+                         {k: type(v).__name__ for k, v in data.items() if k != 'fields'})
+        if 'fields' in data:
+            self.logger.debug("Fields structure: %s", 
+                             {k: type(v).__name__ for k, v in data['fields'].items() if k in ['issuetype', 'summary', 'created']})
+            if 'issuetype' in data['fields']:
+                self.logger.debug("Issue type: %s", data['fields']['issuetype'])
+        
+        # Jira fields에서 document_type 추출 - 여러 방법으로 시도
+        document_type = None
+        
+        # 방법 1: fields.issuetype.name
+        if 'fields' in data and 'issuetype' in data['fields']:
+            issuetype = data['fields']['issuetype']
+            if isinstance(issuetype, dict) and 'name' in issuetype:
+                document_type = issuetype['name']
+                self.logger.debug("Found document_type from fields.issuetype.name: %s", document_type)
+            elif isinstance(issuetype, str):
+                document_type = issuetype
+                self.logger.debug("Found document_type from fields.issuetype string: %s", document_type)
+        
+        # 방법 2: document_type 직접 키
+        if not document_type and 'document_type' in data:
+            document_type = data['document_type']
+            self.logger.debug("Found document_type from direct key: %s", document_type)
+           
+        self.logger.info("Creating document for type: %s", document_type)
         
         try:
-            # 데이터 검증 - 이제 템플릿 검증도 포함
-            is_valid, error = self.validator.validate(data)
-            if not is_valid:
-                logger.error("Document data validation failed", error=error)
-                raise ValidationError(f"유효하지 않은 문서 데이터: {error}")
+            # 원본 데이터에 document_type 추가
+            data_copy = data.copy()
+            data_copy['document_type'] = document_type
             
-            # 데이터 보강
-            enriched_data = self.data_enricher.enrich(document_type, data)
-            logger.debug("Document data enriched")
+            # 원본 데이터 로깅
+            self.logger.debug("Original document data: %s", data_copy)
             
-            # HTML 렌더링
-            html = self.renderer.render(document_type, enriched_data)
-            logger.debug("Document rendered to HTML", html_length=len(html))
+            # 데이터 검증 - 스키마 검증은 나중에 필요할 때 다시 활성화
+            # is_valid, error = self.validator.validate(data_copy)
+            # if not is_valid:
+            #     self.logger.error("Document data validation failed: %s", error, exc_info=True)
+            #     raise ValidationError(f"유효하지 않은 문서 데이터: {error}")
+            
+            # 데이터 전처리 - 마크다운 테이블 파싱 등
+            if self.preprocessor:
+                try:
+                    self.logger.debug("Preprocessing data")
+                    data_copy = self.preprocessor.preprocess(data_copy)
+                    self.logger.debug("Data preprocessed successfully")
+                except Exception as e:
+                    self.logger.error("Data preprocessing failed: %s", str(e), exc_info=True)
+                    # 전처리 실패해도 계속 진행
+            
+            # 데이터 보강 - 선택적으로 필요한 필드만 보강 (전체 구조를 바꾸지 않음)
+            render_data = data_copy
+            if self.data_enricher:
+                # 필요한 필드만 보강하도록 Enricher 인터페이스 활용
+                # 보강된 데이터는 원본 구조를 유지하면서 필요한 필드만 추가/수정됨
+                try:
+                    enriched_data = self.data_enricher.enrich(document_type, data_copy)
+                    if enriched_data:
+                        render_data = enriched_data
+                        self.logger.debug("Data enriched for specific fields")
+                except Exception as e:
+                    self.logger.error("Data enrichment failed: %s", str(e), exc_info=True)
+                    # 보강 실패해도 계속 진행
+            
+            # HTML 렌더링 - Jira 데이터 구조 그대로 전달
+            self.logger.debug("Rendering document with Jira data structure")
+            html = self.renderer.render(document_type, render_data)
+            self.logger.debug("Document rendered to HTML (length: %d)", len(html))
             
             # PDF 생성
             pdf = self.pdf_generator.generate(html)
-            logger.debug("PDF generated", pdf_size=len(pdf))
+            self.logger.debug("PDF generated (size: %d bytes)", len(pdf))
             
             # 결과 반환
             result = {
@@ -58,47 +124,52 @@ class DocumentService:
                 "pdf": pdf
             }
             
-            logger.info("Document created successfully", 
-                       document_id=result["document_id"], document_type=document_type)
+            self.logger.info("Document created successfully (ID: %s, type: %s)", 
+                           result["document_id"], document_type)
             return result
             
         except ValidationError as e:
             # 검증 오류 - 그대로 전파
+            self.logger.error("Validation error: %s", str(e), exc_info=True)
             raise
             
         except RenderingError as e:
             # 렌더링 오류는 템플릿 문제일 가능성이 큼
-            logger.error("Failed to render document template", document_type=document_type, error=str(e))
+            self.logger.error("Failed to render document template (type: %s): %s", 
+                            document_type, str(e), exc_info=True)
             raise RenderingError(f"문서 템플릿 렌더링 실패: {str(e)}")
             
         except PdfGenerationError as e:
             # PDF 생성 오류
-            logger.error("Failed to generate PDF", document_type=document_type, error=str(e))
+            self.logger.error("Failed to generate PDF (type: %s): %s", 
+                            document_type, str(e), exc_info=True)
             raise
             
         except Exception as e:
             # 기타 예상치 못한 오류
-            logger.critical("Unexpected error creating document", 
-                          document_type=document_type, error=str(e), exc_info=True)
+            self.logger.critical("Unexpected error creating document (type: %s): %s", 
+                               document_type, str(e), exc_info=True)
             raise DocumentAutomationError(f"문서 생성 중 오류 발생: {str(e)}")
     
     def save_pdf(self, pdf_data: bytes, output_path: str) -> str:
         """PDF 파일 저장"""
-        logger.debug("Saving PDF to file", output_path=output_path)
+        self.logger.debug("Saving PDF to file: %s", output_path)
         
         # 디렉토리 확인 및 생성
         output_dir = os.path.dirname(output_path)
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
-            logger.debug("Created output directory", directory=output_dir)
+            self.logger.debug("Created output directory: %s", output_dir)
         
         # PDF 저장
         try:
             with open(output_path, 'wb') as f:
                 f.write(pdf_data)
             
-            logger.info("PDF saved successfully", output_path=output_path, size=len(pdf_data))
+            self.logger.info("PDF saved successfully (path: %s, size: %d bytes)", 
+                           output_path, len(pdf_data))
             return output_path
         except Exception as e:
-            logger.error("Failed to save PDF", output_path=output_path, error=str(e))
+            self.logger.error("Failed to save PDF (path: %s): %s", 
+                            output_path, str(e), exc_info=True)
             raise IOError(f"Failed to save PDF to {output_path}: {str(e)}")

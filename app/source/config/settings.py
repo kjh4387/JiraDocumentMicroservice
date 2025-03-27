@@ -2,9 +2,7 @@ import os
 import json
 from typing import Dict, Any
 from app.source.core.exceptions import ConfigurationError
-from app.source.core.logging import get_logger
 
-logger = get_logger(__name__)
 
 class Settings:
     """애플리케이션 설정 관리"""

@@ -30,7 +30,7 @@ class MarkdownTableParser:
         
         # 데이터 행 처리
         result = []
-        for line in lines[2:]:  # 구분선 이후의 행들만 처리
+        for line in lines[1:]:  # 구분선 이후의 행들만 처리
             if not line.strip():  # 빈 줄 무시
                 continue
             values = [v.strip() for v in line.strip('|').split('|')]

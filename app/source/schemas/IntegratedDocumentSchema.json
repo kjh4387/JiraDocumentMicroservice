@@ -25,6 +25,15 @@
     },
     "research_project_info": {
       "$ref": "#/definitions/ResearchProjectInfo"
+    },
+    "supplier_info": {
+      "$ref": "#/definitions/SupplierInfo"
+    },
+    "meeting_info": {
+      "$ref": "#/definitions/MeetingInfo"
+    },
+    "item_list": {
+      "$ref": "#/definitions/ItemList"
     }
   },
   "required": ["document_type", "metadata"],
@@ -352,28 +361,70 @@
     "MeetingInfo": {
       "type": "object",
       "properties": {
-        "title": {
+        "meeting_date": {
           "type": "string",
-          "description": "회의제목"
+          "description": "회의 일자"
         },
-        "date": {
+        "meeting_place": {
           "type": "string",
-          "description": "회의일시"
+          "description": "회의 장소"
         },
-        "place": {
+        "meeting_agenda": {
           "type": "string",
-          "description": "회의장소"
+          "description": "회의 목적(주제)"
         },
-        "purpose": {
+        "meeting_summary": {
           "type": "string",
-          "description": "회의목적"
+          "description": "회의록 내용"
         },
-        "participants": {
-          "type": "string",
-          "description": "참석자"
+        "internal_participants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/InternalParticipant"
+          }
+        },
+        "external_participants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ExternalParticipant"
+          }
         }
       },
-      "required": ["date"]
+      "required": ["meeting_date", "meeting_place", "meeting_agenda", "meeting_summary"]
+    },
+    "InternalParticipant": {
+      "type": "object",
+      "properties": {
+        "jira_account_id": {
+          "type": "string",
+          "description": "Jira 계정 ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "이름"
+        },
+        "email": {
+          "type": "string",
+          "description": "이메일"
+        }
+      }
+    },
+    "ExternalParticipant": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "이름"
+        },
+        "email": {
+          "type": "string",
+          "description": "이메일"
+        },
+        "organization": {
+          "type": "string",
+          "description": "소속"
+        }
+      }
     },
     "EstimateDoc": {
       "type": "object",
@@ -724,27 +775,58 @@
         }
       },
       "required": ["metadata", "expense_list", "amount_summary", "applicant_info"]
+    },
+    "SupplierInfo": {
+      "type": "object",
+      "properties": {
+        "company_name": {
+          "type": "string",
+          "description": "회사명"
+        },
+        "biz_id": {
+          "type": "string",
+          "description": "사업자등록번호"
+        },
+        "rep_name": {
+          "type": "string",
+          "description": "대표자명"
+        },
+        "address": {
+          "type": "string",
+          "description": "주소"
+        },
+        "biz_type": {
+          "type": "string",
+          "description": "업태"
+        },
+        "biz_item": {
+          "type": "string",
+          "description": "종목"
+        },
+        "phone": {
+          "type": "string",
+          "description": "전화번호"
+        }
+      },
+      "required": ["company_name"]
     }
   },
   "allOf": [
     {
       "if": {
         "properties": {
-          "document_type": {
-            "const": "견적서"
-          }
+          "document_type": { "const": "견적서" }
         }
       },
       "then": {
-        "$ref": "#/definitions/EstimateDoc"
+        "$ref": "#/definitions/EstimateDoc",
+        "required": ["supplier_info", "item_list"]
       }
     },
     {
       "if": {
         "properties": {
-          "document_type": {
-            "const": "거래명세서"
-          }
+          "document_type": { "const": "거래명세서" }
         }
       },
       "then": {
@@ -754,9 +836,7 @@
     {
       "if": {
         "properties": {
-          "document_type": {
-            "const": "출장신청서"
-          }
+          "document_type": { "const": "출장신청서" }
         }
       },
       "then": {
@@ -766,9 +846,7 @@
     {
       "if": {
         "properties": {
-          "document_type": {
-            "const": "출장정산신청서"
-          }
+          "document_type": { "const": "출장정산신청서" }
         }
       },
       "then": {
@@ -778,9 +856,7 @@
     {
       "if": {
         "properties": {
-          "document_type": {
-            "const": "회의비사용신청서"
-          }
+          "document_type": { "const": "회의비사용신청서" }
         }
       },
       "then": {
@@ -790,21 +866,18 @@
     {
       "if": {
         "properties": {
-          "document_type": {
-            "const": "회의록"
-          }
+          "document_type": { "const": "회의록" }
         }
       },
       "then": {
-        "$ref": "#/definitions/MeetingMinutesDoc"
+        "$ref": "#/definitions/MeetingMinutesDoc",
+        "required": ["meeting_info"]
       }
     },
     {
       "if": {
         "properties": {
-          "document_type": {
-            "const": "구매의뢰서"
-          }
+          "document_type": { "const": "구매의뢰서" }
         }
       },
       "then": {
@@ -814,9 +887,7 @@
     {
       "if": {
         "properties": {
-          "document_type": {
-            "const": "전문가활용계획서"
-          }
+          "document_type": { "const": "전문가활용계획서" }
         }
       },
       "then": {
@@ -826,9 +897,7 @@
     {
       "if": {
         "properties": {
-          "document_type": {
-            "const": "전문가자문확인서"
-          }
+          "document_type": { "const": "전문가자문확인서" }
         }
       },
       "then": {
@@ -838,9 +907,7 @@
     {
       "if": {
         "properties": {
-          "document_type": {
-            "const": "지출결의서"
-          }
+          "document_type": { "const": "지출결의서" }
         }
       },
       "then": {

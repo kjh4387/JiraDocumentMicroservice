@@ -1,8 +1,6 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date
 from typing import List, Optional, Dict, Any
-from dataclasses import dataclass
-from typing import Optional
 
 @dataclass
 class Company:
@@ -22,7 +20,6 @@ class Company:
 @dataclass
 class Employee:
     """직원 정보"""
-    # 필수 필드
     id: str
     name: str
     email: str
@@ -40,22 +37,18 @@ class Employee:
     address: Optional[str] = None
     fax: Optional[str] = None
 
-    def __post_init__(self):
-        """데이터 클래스 초기화 후 호출되는 메서드"""
-        pass
-
 @dataclass
 class Research:
     """연구 과제 정보"""
     id: str
     project_name: str
     project_code: str
+    project_start_date: date
+    project_end_date: date
+    budget: int
+    status: str
     project_period: Optional[str] = None
     project_manager: Optional[str] = None
-    project_start_date: Optional[date] = None
-    project_end_date: Optional[date] = None
-    budget: Optional[int] = None
-    status: Optional[str] = None
     description: Optional[str] = None
 
 @dataclass
@@ -63,16 +56,13 @@ class Expert:
     """전문가 정보"""
     id: str
     name: str
-    affiliation: Optional[str] = None
-    position: Optional[str] = None
-    birth_date: Optional[date] = None
+    affiliation: str
+    position: str
+    email: str
+    birth_date: date
+    phone: str
     address: Optional[str] = None
-    classification: Optional[str] = None
-    email: Optional[str] = None
-    phone: Optional[str] = None
     bank_name: Optional[str] = None
     account_number: Optional[str] = None
     specialty: Optional[str] = None
     bio: Optional[str] = None
-
-

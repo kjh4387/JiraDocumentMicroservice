@@ -2,27 +2,34 @@ from typing import Dict, Any
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 from app.source.core.interfaces import DocumentRenderer
 from app.source.core.exceptions import RenderingError
-from app.source.core.logging import get_logger
+import logging
 from app.source.infrastructure.rendering.filter_util import (
     format_date, format_korean_date, format_date_range, 
     format_number, number_to_korean, format_korean_currency, format_korean_currency_with_num,
     format_currency_aligned, format_number_aligned
 )
 import os
-
-logger = get_logger(__name__)
+from typing import Optional
 
 class JinjaDocumentRenderer(DocumentRenderer):
     """Jinja2를 사용한 문서 렌더링 - 통합 템플릿 방식"""
     
-    def __init__(self, template_dir: str):
-        logger.debug("Initializing JinjaDocumentRenderer", template_dir=template_dir)
+    def __init__(self, template_dir: str, logger: logging.Logger = None):
+        """
+        Args:
+            template_dir: 템플릿 디렉토리 경로
+            logger: 로거 인스턴스
+        """
+        self.template_dir = template_dir
+        self.logger = logger or logging.getLogger(__name__)
+        self.logger.debug("Initializing JinjaDocumentRenderer with template_dir: %s", template_dir)
+        
         try:
-            self.template_dir = template_dir
             self.template_env = Environment(
                 loader=FileSystemLoader(template_dir),
-                autoescape=True  # HTML 자동 이스케이프 활성화
+                autoescape=True
             )
+            self.logger.info("Document renderer initialized with template_dir: %s", template_dir)
             
             # 커스텀 필터 등록
             self.template_env.filters['format_date'] = format_date
@@ -38,48 +45,79 @@ class JinjaDocumentRenderer(DocumentRenderer):
             # 정렬 필터 추가
             self.template_env.filters['currency_aligned'] = format_currency_aligned
             self.template_env.filters['number_aligned'] = format_number_aligned
-            
-            logger.info("Document renderer initialized", template_dir=template_dir)
         except Exception as e:
-            logger.error("Failed to initialize document renderer", error=str(e))
-            raise RenderingError(f"Failed to initialize document renderer: {str(e)}")
+            self.logger.error("Failed to initialize document renderer: %s", str(e))
+            raise
     
     def render(self, document_type: str, data: Dict[str, Any]) -> str:
-        """문서 데이터를 HTML로 통합 렌더링"""
-        logger.debug("Rendering document", document_type=document_type)
+        """문서 데이터를 HTML로 통합 렌더링
+        
+        Args:
+            document_type: 문서 유형 (템플릿 결정)
+            data: Jira 응답 데이터 (fields 포함)
+            
+        Returns:
+            렌더링된 HTML 문자열
+        """
+        self.logger.debug("Rendering document: %s", document_type)
         
         try:
             # 문서 템플릿 가져오기
             template_name = self._get_template_path(document_type)
+            self.logger.debug("Using template: %s", template_name)
             
-            # 템플릿 렌더링 - data에 있는 document_type만 사용
+            # 템플릿에 전달할 컨텍스트 준비
+            # Jira 데이터를 그대로 전달하되, 최상위 키도 접근 가능하게 함
+            template_context = {
+                'document_type': document_type,
+            }
+            
+            # Jira의 fields를 최상위로 복사하여 템플릿에서 쉽게 접근 가능하게 함
+            if 'fields' in data:
+                self.logger.debug("Adding fields to template context")
+                template_context.update(data['fields'])
+            
+            
+            # Available keys in context for debugging
+            
+            # 템플릿 렌더링
             template = self.template_env.get_template(template_name)
+            self.logger.debug("Template loaded successfully")
             
-            # document_type이 data에 없으면 추가
-            if 'document_type' not in data:
-                data_copy = data.copy()
-                data_copy['document_type'] = document_type
-            else:
-                data_copy = data
+            try:
+                self.logger.debug("Rendering template with context: %s", template_context)
+                rendered_html = template.render(**template_context)
+                self.logger.debug("Template rendered successfully")
+            except Exception as template_error:
+                self.logger.error("Template rendering error: %s", str(template_error), exc_info=True)
+                # Try to identify which variable is causing the problem
+                for key, value in template_context.items():
+                    if key != 'jira':  # Skip large objects
+                        try:
+                            self.logger.debug("Testing context key: %s = %r", key, value)
+                            # Try to render a simple template with just this variable
+                            test_template = self.template_env.from_string("{{ " + key + " }}")
+                            test_template.render(**{key: value})
+                        except Exception as e:
+                            self.logger.error("Problem with context key %s: %s", key, str(e))
+                raise
             
-            # 데이터만 전달하여 중복 방지
-            rendered_html = template.render(**data_copy)
-            
-            logger.debug("Document rendered successfully", document_type=document_type, template=template_name)
+            self.logger.debug("Document rendered successfully: %s, template: %s", document_type, template_name)
             return rendered_html
             
         except TemplateNotFound as e:
             error_msg = f"템플릿을 찾을 수 없습니다: '{document_type}', 경로: {str(e)}"
-            logger.error("Template not found", document_type=document_type, error=str(e))
+            self.logger.error("Template not found: %s, error: %s", document_type, str(e))
             raise RenderingError(error_msg)
             
         except Exception as e:
-            logger.error("Document rendering failed", document_type=document_type, error=str(e))
+            self.logger.error("Document rendering failed: %s, error: %s", document_type, str(e))
             raise RenderingError(f"문서 '{document_type}' 렌더링 실패: {str(e)}")
     
     def _get_template_path(self, document_type: str) -> str:
         """문서 유형에 맞는 템플릿 파일 경로 찾기"""
         # 우선순위별 템플릿 경로 시도
+        original_document_type = document_type
         template_paths = [
             f"{document_type}.html",                 # 직접 문서 이름 (견적서.html)
             f"documents/{document_type}.html",       # documents/ 폴더 내 문서 이름
@@ -90,10 +128,29 @@ class JinjaDocumentRenderer(DocumentRenderer):
             try:
                 # 템플릿이 존재하는지 확인
                 self.template_env.get_template(path)
-                logger.debug("Template found", path=path)
+                self.logger.debug("Template found: %s", path)
                 return path
             except TemplateNotFound:
+                self.logger.debug("Template not found: %s", path)
                 continue
+        
+        # 어떤 템플릿도 찾지 못한 경우 모든 템플릿 목록 로깅
+        try:
+            all_templates = self.template_env.list_templates()
+            self.logger.error("No template found for document_type: %s. Available templates: %s", 
+                            original_document_type, all_templates)
+            
+            # 기본 템플릿 시도 (default.html)
+            if "default.html" in all_templates:
+                self.logger.info("Using default.html as fallback template")
+                return "default.html"
+                
+            # 첫 번째 사용 가능한 템플릿 사용
+            if all_templates:
+                self.logger.info("Using first available template as fallback: %s", all_templates[0])
+                return all_templates[0]
+        except Exception as e:
+            self.logger.error("Error listing templates: %s", str(e))
         
         # 마지막 경로를 기본값으로 반환 (없으면 나중에 예외 발생)
         return template_paths[-1]
@@ -114,11 +171,10 @@ class JinjaDocumentRenderer(DocumentRenderer):
         }
         
         if document_type not in mapping:
-            logger.warning("Unsupported document type, using fallback", document_type=document_type)
+            self.logger.warning("Unsupported document type, using fallback: %s", document_type)
             return "default.html"
         
-        logger.debug("Template mapping resolved", document_type=document_type, 
-                    template=mapping[document_type])
+        self.logger.debug("Template mapping resolved: %s -> %s", document_type, mapping[document_type])
         return mapping[document_type]
     
     

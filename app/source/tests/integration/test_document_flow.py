@@ -8,6 +8,9 @@ from app.source.core.exceptions import DocumentAutomationError
 # 명시적으로 각 도메인 클래스 임포트
 from app.source.core.domain import Company, Employee, Research, Expert
 from datetime import date
+import logging
+
+logger = logging.getLogger(__name__)
 
 class TestDocumentFlow(unittest.TestCase):
     """문서 생성 흐름 통합 테스트"""
@@ -251,60 +254,65 @@ class TestDocumentFlow(unittest.TestCase):
             biz_type="서비스업",
             biz_item="소프트웨어 개발",
             phone="02-1234-5678",
-            rep_stamp=None,  # 대표 도장 이미지는 None으로 설정
-            fax="02-1234-5679",
+            rep_stamp=None,
+            email="contact@test.com",
+            fax="02-1234-5679"
         )
         self.container.company_repo.save(company)
         
         # 직원 정보 저장
         employee = Employee(
             id="EMP-TEST-001",
-            name="이통합",
+            name="홍길동",
             department="개발팀",
-            position="선임연구원",
-            email="test@example.com",
+            position="대리",
+            email="hong@test.com",
             phone="010-1234-5678",
-            bank_name="신한은행",
-            account_number="110-123-456789",
             signature=None,
-            stamp=None,  # None으로 설정
+            stamp=None,
+            bank_name="우리은행",
+            account_number="1002-123-456789",
             birth_date="1990-01-01",
-            address="서울시 서초구",
-            fax="02-1234-5679"
+            address="서울시 강남구",
+            fax="02-1234-5679",
+            jira_account_id="712020:9373b1a0-2da9-4202-a103-01402f8fa0e5"
         )
         self.container.employee_repo.save(employee)
         
         # 연구 과제 정보 저장
         research = Research(
-            id="RESEARCH-TEST-001",
-            project_name="통합테스트 연구과제",
-            project_code="R2023-001",
+            id="RES-TEST-001",
+            project_name="AI 기반 문서 자동화 연구",
+            project_code="AI-2023-001",
             project_period="2023-01-01 ~ 2023-12-31",
-            project_manager="김관리",
+            project_manager="김연구",
             project_start_date=date(2023, 1, 1),
             project_end_date=date(2023, 12, 31),
             budget=100000000,
             status="진행중",
-            description="테스트 연구과제 설명"
+            description="AI 기술을 활용한 문서 자동화 시스템 개발"
         )
         self.container.research_repo.save(research)
         
         # 전문가 정보 저장
         expert = Expert(
             id="EXP-TEST-001",
-            name="김전문",
-            affiliation="서울대학교",
-            position="교수",
-            email="expert@example.com",
-            birth_date=date(1970, 5, 15),
-            phone="010-1234-5678",
-            address="서울시 관악구",
+            name="박전문",
+            affiliation="한국연구원",
+            position="수석연구원",
+            birth_date=date(1970, 1, 1),
+            email="expert@test.com",
+            phone="010-9876-5432",
+            address="서울시 서초구",
             bank_name="국민은행",
-            account_number="110-987-654321",
+            account_number="123-45-678901",
             specialty="인공지능",
-            bio="인공지능 분야 전문가"
+            bio="20년 이상의 AI 연구 경력"
         )
         self.container.expert_repo.save(expert)
+        
+        # 테스트 데이터 저장 완료 로깅
+        logger.info("Test data setup completed")
     
     def test_estimate_document_flow(self):
         """견적서 생성 흐름 테스트"""

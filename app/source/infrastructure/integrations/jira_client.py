@@ -4,16 +4,14 @@ from requests.auth import HTTPBasicAuth
 import os
 import json
 import re
-from app.source.core.logging import get_logger
+import logging
 from app.source.core.interfaces import JiraClient, JiraFieldMapper
 from app.source.infrastructure.mapping.jira_field_mapper import ApiJiraFieldMappingProvider, JiraFieldMapperimpl
-
-logger = get_logger(__name__)
 
 class JiraClient(JiraClient):
     """Jira API와 통신하는 클라이언트"""
     
-    def __init__(self, jira_base_url = os.getenv("JIRA_BASE_URL"), username = os.getenv("JIRA_USERNAME"), api_token = os.getenv("JIRA_API_TOKEN"), download_dir: str = None, field_mapper: Optional[JiraFieldMapper] = None):
+    def __init__(self, jira_base_url = os.getenv("JIRA_BASE_URL"), username = os.getenv("JIRA_USERNAME"), api_token = os.getenv("JIRA_API_TOKEN"), download_dir: str = None, field_mapper: Optional[JiraFieldMapper] = None, logger: logging.Logger = None):
         """JiraClient 초기화
         
         Args:
@@ -22,17 +20,19 @@ class JiraClient(JiraClient):
             api_token (str): Jira API 토큰
             download_dir (str, optional): 첨부 파일 다운로드 기본 경로
             field_mapper (JiraFieldMapper, optional): Jira 필드 매퍼
+            logger (logging.Logger, optional): 로거 인스턴스
         """
         self.jira_base_url = jira_base_url
         self.auth = HTTPBasicAuth(username, api_token)
         self.headers = {"Accept": "application/json"}
         self.download_dir = download_dir or os.path.join(os.getcwd(), "downloads")
         self.field_mapper = field_mapper
+        self.logger = logger or logging.getLogger(__name__)
         
         # 다운로드 디렉토리 생성
         os.makedirs(self.download_dir, exist_ok=True)
         
-        logger.debug(f"JiraClient initialized with base URL: {jira_base_url}")
+        self.logger.debug("JiraClient initialized with base URL: %s", jira_base_url)
     
     def get_issue(self, issue_key: str) -> Dict[str, Any]:
         """이슈 정보 조회
@@ -50,7 +50,7 @@ class JiraClient(JiraClient):
         response = requests.get(issue_url, headers=self.headers, auth=self.auth)
         
         if response.status_code == 200:
-            logger.info(f"Successfully fetched issue: {issue_key}")
+            self.logger.info(f"Successfully fetched issue: {issue_key}")
             data = response.json()
             
             # 필드 매퍼가 설정된 경우 응답 변환
@@ -60,7 +60,7 @@ class JiraClient(JiraClient):
             return data
         else:
             error_msg = f"Failed to fetch issue {issue_key}: {response.status_code} - {response.text}"
-            logger.error(error_msg)
+            self.logger.error(error_msg)
             raise Exception(error_msg)
     
     def download_attachments(self, issue_key: str, destination_dir: str = None) -> List[str]:
@@ -78,7 +78,7 @@ class JiraClient(JiraClient):
         attachments = issue_data["fields"]["attachment"]
         
         if not attachments:
-            logger.info(f"No attachments found for issue {issue_key}.")
+            self.logger.info(f"No attachments found for issue {issue_key}.")
             return []
         
         # 저장 디렉토리 결정
@@ -97,7 +97,7 @@ class JiraClient(JiraClient):
                 self._download_file(attachment_url, save_path)
                 downloaded_files.append(save_path)
             except Exception as e:
-                logger.error(f"Failed to download attachment {file_name}: {str(e)}")
+                self.logger.error(f"Failed to download attachment {file_name}: {str(e)}")
         
         return downloaded_files
     
@@ -123,7 +123,7 @@ class JiraClient(JiraClient):
             if field in issue_fields:
                 result[field] = issue_fields[field]
             else:
-                logger.warning(f"Field '{field}' not found in issue {issue_key}")
+                self.logger.warning(f"Field '{field}' not found in issue {issue_key}")
         
         return result
     
@@ -154,10 +154,10 @@ class JiraClient(JiraClient):
         if response.status_code == 200:
             with open(save_path, 'wb') as file:
                 file.write(response.content)
-            logger.debug(f"File downloaded: {save_path}")
+            self.logger.debug(f"File downloaded: {save_path}")
         else:
             error_msg = f"Failed to download file: {response.status_code} - {response.text}"
-            logger.error(error_msg)
+            self.logger.error(error_msg)
             raise Exception(error_msg)
 
     def _make_request(self, method: str, path: str, data=None) -> Any:
@@ -188,10 +188,10 @@ class JiraClient(JiraClient):
                 return response.json() if response.content else None
             else:
                 error_msg = f"API request failed: {response.status_code} - {response.text}"
-                logger.error(error_msg)
+                self.logger.error(error_msg)
                 raise Exception(error_msg)
         except Exception as e:
-            logger.error(f"Error making API request: {str(e)}")
+            self.logger.error(f"Error making API request: {str(e)}")
             raise
 
 

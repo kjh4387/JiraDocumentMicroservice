@@ -1,9 +1,8 @@
 import re
 from typing import Dict, Any, List, Optional, TypedDict, Union
 import json
-from app.source.core.logging import get_logger
-
-logger = get_logger(__name__)
+from app.source.infrastructure.mapping.markdown_parser import MarkdownTableParser
+import logging
 
 class TableColumn(TypedDict):
     name: str
@@ -16,55 +15,12 @@ class JiraPreprocessor:
     def __init__(self, schema_validator=None):
         """초기화"""
         self.schema_validator = schema_validator
-        # 각 문서 유형에 따른 마크다운 테이블 필드 매핑
-        self.table_field_mapping = {
-            "견적서": {
-                "item_list": [
-                    {"name": "품명", "key": "name", "type": "str"},
-                    {"name": "규격", "key": "spec", "type": "str"},
-                    {"name": "수량", "key": "quantity", "type": "int"},
-                    {"name": "단가", "key": "unit_price", "type": "int"},
-                ]
-            },
-            "거래명세서": {
-                "item_list": [
-                    {"name": "품명", "key": "name", "type": "str"},
-                    {"name": "규격", "key": "spec", "type": "str"},
-                    {"name": "수량", "key": "quantity", "type": "int"},
-                    {"name": "단가", "key": "unit_price", "type": "int"},
-                ]
-            },
-            "출장정산신청서": {
-                "expense_list": [
-                    {"name": "날짜", "key": "date", "type": "str"},
-                    {"name": "항목", "key": "category", "type": "str"},
-                    {"name": "내용", "key": "detail", "type": "str"},
-                    {"name": "금액", "key": "amount", "type": "int"},
-                    {"name": "증빙", "key": "receipt", "type": "str"}
-                ]
-            },
-            "구매의뢰서": {
-                "item_list": [
-                    {"name": "품명", "key": "name", "type": "str"},
-                    {"name": "규격", "key": "spec", "type": "str"},
-                    {"name": "수량", "key": "quantity", "type": "int"},
-                    {"name": "단가", "key": "unit_price", "type": "int"},
-                    {"name": "용도", "key": "purpose", "type": "str"}
-                ]
-            },
-            "지출결의서": {
-                "expense_list": [
-                    {"name": "항목명", "key": "item_name", "type": "str"},
-                    {"name": "금액", "key": "amount", "type": "int"},
-                    {"name": "비고", "key": "memo", "type": "str"}
-                ]
-            }
-        }
-        
-        logger.debug("JiraPreprocessor initialized")
+        self.markdown_parser = MarkdownTableParser()
+        self.logger = logging.getLogger(__name__)
+        self.logger.debug("JiraPreprocessor initialized")
     
     def preprocess(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Jira 데이터 전처리
+        """Jira 데이터 전처리 - 모든 필드에 대해 마크다운 테이블 파싱 시도
         
         Args:
             data (Dict[str, Any]): Jira로부터 받은 원본 데이터
@@ -72,134 +28,178 @@ class JiraPreprocessor:
         Returns:
             Dict[str, Any]: 전처리된 데이터
         """
-        logger.debug("Starting data preprocessing")
+        self.logger.info("=== Starting data preprocessing ===")
+        
+        # 입력 데이터 로깅
+        if data is None:
+            self.logger.warning("Input data is None")
+            return {}
+            
+        self.logger.debug(f"Input data has {len(data)} top-level keys: {list(data.keys())}")
+        if 'fields' in data:
+            self.logger.debug(f"Input 'fields' has {len(data['fields'])} keys: {list(data['fields'].keys())}")
         
         # 데이터 복사
         processed_data = data.copy()
         
-        # 문서 유형 확인
-        document_type = processed_data.get("document_type", "")
-        if not document_type:
-            logger.error("Document type not found in data")
-            return processed_data
+        # fields 객체 가져오기
+        if 'fields' in processed_data:
+            self.logger.debug("Processing 'fields' object")
+            fields = processed_data['fields']
+            # fields 내의 모든 필드 처리 - 필드 목록을 미리 복사
+            field_items = list(fields.items())
+            markdown_field_count = 0
+            for field_name, field_value in field_items:
+                if isinstance(field_value, str):
+                    self.logger.debug(f"Checking if field '{field_name}' contains markdown table (length: {len(field_value)})")
+                    if self._looks_like_markdown_table(field_value):
+                        self.logger.debug(f"Field '{field_name}' looks like a markdown table")
+                        try:
+                            parsed_table = self.markdown_parser.parse_table(field_value)
+                            if parsed_table:
+                                self.logger.debug(f"Successfully parsed markdown table for '{field_name}': {len(parsed_table)} rows")
+                                # 파싱된 결과를 새로운 필드로 저장 (원본 필드명 + "_data")
+                                fields[f"{field_name}_data"] = parsed_table
+                                self.logger.info(f"Created '{field_name}_data' with {len(parsed_table)} items")
+                                markdown_field_count += 1
+                                
+                                # 첫 번째 행 로깅 (디버깅용)
+                                if parsed_table and len(parsed_table) > 0:
+                                    self.logger.debug(f"First row of '{field_name}_data': {parsed_table[0]}")
+                            else:
+                                self.logger.warning(f"Parser returned empty result for '{field_name}' despite looking like a table")
+                        except Exception as e:
+                            self.logger.error(f"Error parsing markdown table for field '{field_name}': {str(e)}", exc_info=True)
+            
+            self.logger.info(f"Processed {markdown_field_count} markdown tables in 'fields' object")
         
-        # 문서 유형에 맞는 테이블 필드 매핑 가져오기
-        mapping = self.table_field_mapping.get(document_type, {})
-        if not mapping:
-            logger.debug(f"No table field mapping for document type: {document_type}")
-            return processed_data
+        # fields 외의 최상위 필드 처리 - 필드 목록을 미리 복사
+        self.logger.debug("Processing top-level fields")
+        top_level_items = list(processed_data.items())
+        top_level_markdown_count = 0
+        for field_name, field_value in top_level_items:
+            if field_name != 'fields' and isinstance(field_value, str):
+                self.logger.debug(f"Checking if top-level field '{field_name}' contains markdown table (length: {len(field_value)})")
+                if self._looks_like_markdown_table(field_value):
+                    self.logger.debug(f"Top-level field '{field_name}' looks like a markdown table")
+                    try:
+                        parsed_table = self.markdown_parser.parse_table(field_value)
+                        if parsed_table:
+                            self.logger.debug(f"Successfully parsed top-level markdown table for '{field_name}': {len(parsed_table)} rows")
+                            # 원본 필드를 덮어쓰기 대신 새 필드로 저장
+                            processed_data[f"{field_name}_data"] = parsed_table
+                            self.logger.info(f"Created top-level '{field_name}_data' with {len(parsed_table)} items")
+                            top_level_markdown_count += 1
+                            
+                            # 첫 번째 행 로깅 (디버깅용)
+                            if parsed_table and len(parsed_table) > 0:
+                                self.logger.debug(f"First row of top-level '{field_name}_data': {parsed_table[0]}")
+                        else:
+                            self.logger.warning(f"Parser returned empty result for top-level '{field_name}' despite looking like a table")
+                    except Exception as e:
+                        self.logger.error(f"Error parsing top-level markdown table for field '{field_name}': {str(e)}", exc_info=True)
         
-        # 각 필드별 처리
-        for field_name, column_info in mapping.items():
-            # 해당 필드가 있고 문자열 형태인지 확인
-            if field_name in processed_data and isinstance(processed_data[field_name], str):
-                table_text = processed_data[field_name]
-                # 마크다운 테이블을 리스트로 파싱
-                try:
-                    parsed_list = self._parse_markdown_table(table_text, column_info)
-                    if parsed_list:
-                        processed_data[field_name] = parsed_list
-                        logger.debug(f"Successfully parsed markdown table for field: {field_name}")
-                    else:
-                        logger.warning(f"Failed to parse markdown table for field: {field_name}")
-                except Exception as e:
-                    logger.error(f"Error parsing table for field {field_name}: {str(e)}")
+        self.logger.info(f"Processed {top_level_markdown_count} markdown tables in top-level fields")
         
+        # 수량*단가 계산 필드 추가 (item_list_data 필드가 있는 경우)
+        self.logger.debug("Checking for item list to calculate amounts")
+        if 'fields' in processed_data and 'item_list_data' in processed_data['fields']:
+            self.logger.debug("Found 'item_list_data' in fields, calculating amounts")
+            self._calculate_item_amounts(processed_data['fields']['item_list_data'])
+        elif 'item_list_data' in processed_data:
+            self.logger.debug("Found 'item_list_data' at top level, calculating amounts")
+            self._calculate_item_amounts(processed_data['item_list_data'])
+        else:
+            self.logger.debug("No 'item_list_data' found to calculate amounts")
+        
+        # 금액 합계 계산 (모든 문서 유형에 대해 공통으로 처리)
+        self.logger.debug("Calculating amount summary")
+        processed_data = self.calculate_amount_summary(processed_data)
+        
+        # 결과 데이터 로깅
+        self.logger.debug(f"After preprocessing, data has {len(processed_data)} top-level keys: {list(processed_data.keys())}")
+        if 'fields' in processed_data:
+            self.logger.debug(f"After preprocessing, 'fields' has {len(processed_data['fields'])} keys: {list(processed_data['fields'].keys())}")
+        
+        # 새로 추가된 필드 로깅
+        new_fields = [k for k in processed_data.keys() if k not in data.keys()]
+        if new_fields:
+            self.logger.info(f"Added {len(new_fields)} new top-level fields: {new_fields}")
+        
+        if 'fields' in processed_data and 'fields' in data:
+            new_nested_fields = [k for k in processed_data['fields'].keys() if k not in data['fields'].keys()]
+            if new_nested_fields:
+                self.logger.info(f"Added {len(new_nested_fields)} new fields in 'fields': {new_nested_fields}")
+        
+        self.logger.info("=== Data preprocessing completed ===")
         return processed_data
     
-    def _parse_markdown_table(self, table_text: str, column_info: List[TableColumn]) -> List[Dict[str, Any]]:
-        """마크다운 테이블을 리스트로 파싱
+    def _looks_like_markdown_table(self, text: str) -> bool:
+        """문자열이 마크다운 테이블인지 확인
         
         Args:
-            table_text (str): 마크다운 테이블 텍스트
-            column_info (List[Dict]): 컬럼 정보
+            text (str): 확인할 문자열
             
         Returns:
-            List[Dict[str, Any]]: 파싱된 리스트
+            bool: 마크다운 테이블인 경우 True
         """
-        # 결과 리스트
-        result = []
+        if not text or not isinstance(text, str):
+            return False
+            
+        lines = text.strip().split('\n')
         
-        # 빈 테이블이면 빈 리스트 반환
-        if not table_text or table_text.strip() == "":
-            return result
-        
-        # 테이블 줄 분리
-        lines = table_text.strip().split('\n')
-        
-        # 줄이 최소 3개 이상이어야 함 (헤더, 구분선, 데이터 최소 1줄)
+        # 최소 3줄 이상 (헤더, 구분선, 데이터)
         if len(lines) < 3:
-            logger.warning("Table has less than 3 lines, not a valid markdown table")
-            return result
+            self.logger.debug(f"Text has less than 3 lines ({len(lines)}), not a markdown table")
+            return False
+            
+        # 첫 번째 줄과 두 번째 줄에 | 문자가 있어야 함
+        if '|' not in lines[0] or '|' not in lines[1]:
+            self.logger.debug("Text missing '|' character in first or second line, not a markdown table")
+            return False
+            
         
-        # 헤더 행과 구분선 확인
-        header_line = lines[0]
-        separator_line = lines[1]
+        self.logger.debug(f"Text appears to be a valid markdown table with {len(lines)} lines")
+        return True
+    
+    def _calculate_item_amounts(self, items: List[Dict[str, Any]]) -> None:
+        """아이템 리스트에 금액 계산 필드 추가
         
-        # 테이블 구문 확인 (최소한 | 문자가 있어야 함)
-        if '|' not in header_line or '|' not in separator_line:
-            logger.warning("Table format is invalid, missing '|' characters")
-            return result
+        Args:
+            items (List[Dict[str, Any]]): 아이템 리스트
+        """
+        self.logger.debug(f"Calculating amounts for {len(items)} items")
+        calculated_count = 0
         
-        # 헤더 파싱
-        headers = [col.strip() for col in header_line.split('|') if col.strip()]
-        
-        # 헤더와 컬럼 정보의 매핑 확인
-        header_to_key = {}
-        for col_info in column_info:
-            if col_info["name"] in headers:
-                header_to_key[col_info["name"]] = {
-                    "key": col_info["key"],
-                    "type": col_info["type"]
-                }
+        for i, item in enumerate(items):
+            # quantity와 unit_price 필드가 있는지 확인하고 amount 계산
+            quantity = item.get('quantity')
+            unit_price = item.get('unit_price')
+            
+            self.logger.debug(f"Item {i+1}: quantity={quantity}, unit_price={unit_price}")
+            
+            if quantity is not None and unit_price is not None:
+                try:
+                    # 문자열인 경우 숫자로 변환
+                    if isinstance(quantity, str):
+                        quantity = int(quantity.replace(',', ''))
+                        self.logger.debug(f"Converted string quantity '{item.get('quantity')}' to {quantity}")
+                    if isinstance(unit_price, str):
+                        unit_price = int(unit_price.replace(',', ''))
+                        self.logger.debug(f"Converted string unit_price '{item.get('unit_price')}' to {unit_price}")
+                        
+                    item['amount'] = quantity * unit_price
+                    self.logger.debug(f"Calculated amount for item {i+1}: {item['amount']}")
+                    calculated_count += 1
+                except (ValueError, TypeError) as e:
+                    self.logger.warning(f"Failed to calculate amount for item {i+1}: {str(e)}")
             else:
-                logger.warning(f"Column '{col_info['name']}' not found in table headers")
+                self.logger.debug(f"Item {i+1} is missing quantity or unit_price, skipping amount calculation")
         
-        # 데이터 행 처리
-        for line_idx in range(2, len(lines)):
-            line = lines[line_idx]
-            if not line.strip() or '|' not in line:
-                continue
-                
-            # 행 데이터 파싱
-            values = [val.strip() for val in line.split('|') if val.strip() != ""]
-            
-            # 헤더 수와 값 수가 맞는지 확인
-            if len(headers) != len(values):
-                logger.warning(f"Header and value count mismatch in line {line_idx+1}. Headers: {len(headers)}, Values: {len(values)}")
-                continue
-            
-            # 행 데이터 객체 생성
-            row_data = {}
-            for i, header in enumerate(headers):
-                if i < len(values) and header in header_to_key:
-                    col_key = header_to_key[header]["key"]
-                    col_type = header_to_key[header]["type"]
-                    
-                    # 값 타입 변환
-                    try:
-                        if col_type == "int":
-                            # 금액 형식(1,000,000) 처리
-                            clean_value = values[i].replace(",", "")
-                            row_data[col_key] = int(clean_value)
-                        elif col_type == "float":
-                            row_data[col_key] = float(values[i])
-                        elif col_type == "bool":
-                            row_data[col_key] = values[i].lower() in ("true", "yes", "y", "1")
-                        else:  # str 등 다른 타입
-                            row_data[col_key] = values[i]
-                    except ValueError:
-                        logger.warning(f"Type conversion error for column {header}, value: {values[i]}")
-                        row_data[col_key] = values[i]  # 원본 값으로 저장
-            
-            # 결과에 행 데이터 추가
-            if row_data:
-                result.append(row_data)
-        
-        return result
+        self.logger.info(f"Successfully calculated amounts for {calculated_count} out of {len(items)} items")
     
     def calculate_amount_summary(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """항목 리스트에서 금액 합계 계산
+        """금액 합계 계산 - 문서 유형에 관계없이 공통 처리
         
         Args:
             data (Dict[str, Any]): 전처리된 데이터
@@ -207,48 +207,76 @@ class JiraPreprocessor:
         Returns:
             Dict[str, Any]: 금액 합계가 추가된 데이터
         """
-        document_type = data.get("document_type", "")
+        self.logger.debug("Calculating amount summary")
         
-        # 견적서, 거래명세서, 구매의뢰서일 경우
-        if document_type in ["견적서", "거래명세서", "구매의뢰서"]:
-            item_list = data.get("item_list", [])
-            if item_list and isinstance(item_list, list):
-                supply_sum = sum(item.get("amount", 0) for item in item_list)
-                vat_sum = sum(item.get("vat", 0) for item in item_list)
-                
-                # VAT 필드가 없는 경우 10% 자동 계산
-                if vat_sum == 0:
-                    vat_sum = int(supply_sum * 0.1)
-                
-                grand_total = supply_sum + vat_sum
-                
-                data["amount_summary"] = {
-                    "supply_sum": supply_sum,
-                    "vat_sum": vat_sum,
-                    "grand_total": grand_total
-                }
+        # 항목 리스트 찾기 (fields 내부 또는 최상위)
+        item_list = None
+        item_list_source = None
         
-        # 출장정산신청서
-        elif document_type == "출장정산신청서":
-            expense_list = data.get("expense_list", [])
-            if expense_list and isinstance(expense_list, list):
-                total_expense = sum(item.get("amount", 0) for item in expense_list)
-                advance_payment = data.get("amount_summary", {}).get("advance_payment", 0)
-                
-                data["amount_summary"] = {
-                    "advance_payment": advance_payment,
-                    "total_expense": total_expense,
-                    "balance": advance_payment - total_expense
-                }
+        if 'fields' in data:
+            if 'item_list_data' in data['fields']:
+                item_list = data['fields']['item_list_data']
+                item_list_source = "fields.item_list_data"
+            elif 'expense_list_data' in data['fields']:
+                item_list = data['fields']['expense_list_data']
+                item_list_source = "fields.expense_list_data"
+        else:
+            if 'item_list_data' in data:
+                item_list = data['item_list_data']
+                item_list_source = "item_list_data"
+            elif 'expense_list_data' in data:
+                item_list = data['expense_list_data']
+                item_list_source = "expense_list_data"
         
-        # 지출결의서
-        elif document_type == "지출결의서":
-            expense_list = data.get("expense_list", [])
-            if expense_list and isinstance(expense_list, list):
-                grand_total = sum(item.get("amount", 0) for item in expense_list)
-                
-                data["amount_summary"] = {
-                    "grand_total": grand_total
-                }
+        if item_list_source:
+            self.logger.debug(f"Found item list source: {item_list_source} with {len(item_list)} items")
+        else:
+            self.logger.debug("No item list found for amount summary calculation")
+            return data
+        
+        # 항목 리스트가 있으면 금액 합계 계산
+        if item_list and isinstance(item_list, list):
+            # 합계 계산
+            total_amount = 0
+            items_with_amount = 0
+            
+            for i, item in enumerate(item_list):
+                # 항목의 금액 필드 (amount 또는 다른 필드)
+                amount = 0
+                if 'amount' in item:
+                    try:
+                        if isinstance(item['amount'], str):
+                            amount = int(item['amount'].replace(',', ''))
+                            self.logger.debug(f"Converted string amount '{item['amount']}' to {amount} for item {i+1}")
+                        else:
+                            amount = item['amount']
+                            
+                        total_amount += amount
+                        items_with_amount += 1
+                        self.logger.debug(f"Added amount {amount} from item {i+1}, running total: {total_amount}")
+                    except (ValueError, TypeError) as e:
+                        self.logger.warning(f"Error processing amount for item {i+1}: {str(e)}")
+                else:
+                    self.logger.debug(f"Item {i+1} has no 'amount' field")
+            
+            self.logger.info(f"Calculated total amount: {total_amount} from {items_with_amount} items with amount")
+            
+            # 계산된 합계 저장
+            amount_summary = {'total_amount': total_amount}
+            
+            # 부가세 계산 (10%)
+            vat = int(total_amount * 0.1)
+            amount_summary['vat'] = vat
+            amount_summary['grand_total'] = total_amount + vat
+            
+            self.logger.debug(f"Amount summary calculated: total={total_amount}, vat={vat}, grand_total={total_amount + vat}")
+            
+            # 데이터에 저장
+            if 'fields' in data:
+                data['fields']['amount_summary'] = amount_summary
+                self.logger.info("Added amount_summary to fields")
+            else:
+                data['amount_summary'] = amount_summary
+                self.logger.info("Added amount_summary to top level")
         
         return data 

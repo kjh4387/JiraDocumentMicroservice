@@ -6,11 +6,11 @@
 
 from typing import Dict, List, Any, Optional, Type, TypeVar, Generic, Tuple
 from app.source.core.exceptions import DatabaseError
-from app.source.core.logging import get_logger
+import logging
 from app.source.infrastructure.persistence.schema_definition import TableSchema, SchemaRegistry
 from app.source.infrastructure.persistence.db_connection import DatabaseConnection
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 # 제네릭 타입 정의
 T = TypeVar('T')
@@ -31,7 +31,7 @@ class GenericRepository(Generic[T]):
         self.db = db_connection
         self.schema = schema
         self.entity_class = entity_class
-        self.logger = logger or get_logger(__name__)
+        self.logger = logger or logging.getLogger(__name__)
         self.logger.debug(f"GenericRepository initialized for {schema.table_name}")
     
     def find_by_id(self, id_value: str) -> Optional[T]:
@@ -50,32 +50,26 @@ class GenericRepository(Generic[T]):
             query = self.schema.select_by_id_sql()
             params = (id_value,)
             
-            self.logger.debug(f"Finding entity by ID", 
-                         table=self.schema.table_name, 
-                         id=id_value, 
-                         query=query)
+            self.logger.debug("Finding entity by ID in table %s (id=%s, query=%s)", 
+                         self.schema.table_name, id_value, query)
             
             result = self.db.execute_query(query, params)
             
             if not result:
-                self.logger.warning(f"Entity not found", 
-                               table=self.schema.table_name, 
-                               id=id_value)
+                self.logger.warning("Entity not found in table %s (id=%s)", 
+                               self.schema.table_name, id_value)
                 return None
             
             entity = self._map_to_entity(result[0])
-            self.logger.debug(f"Entity found", 
-                         table=self.schema.table_name, 
-                         id=id_value)
+            self.logger.debug("Entity found in table %s (id=%s)", 
+                         self.schema.table_name, id_value)
             
             return entity
             
         except Exception as e:
-            error_msg = f"Database error while finding entity by ID"
-            self.logger.error(error_msg, 
-                         table=self.schema.table_name, 
-                         id=id_value, 
-                         error=str(e))
+            error_msg = "Database error while finding entity by ID"
+            self.logger.error("%s in table %s (id=%s): %s", 
+                         error_msg, self.schema.table_name, id_value, str(e))
             raise DatabaseError(f"{error_msg} in {self.schema.table_name}: {str(e)}")
     
     def find_by_criteria(self, criteria: Dict[str, Any]) -> List[T]:
@@ -94,32 +88,26 @@ class GenericRepository(Generic[T]):
             # 원래 코드로 복구
             query, params = self.schema.select_by_criteria_sql(criteria)
             
-            self.logger.debug(f"Finding entities by criteria", 
-                         table=self.schema.table_name, 
-                         criteria=criteria, 
-                         query=query)
+            self.logger.debug("Finding entities by criteria in table %s (criteria=%s, query=%s)", 
+                         self.schema.table_name, criteria, query)
             
             result = self.db.execute_query(query, params)
             
             if not result:
-                self.logger.warning(f"Entities not found", 
-                               table=self.schema.table_name, 
-                               criteria=criteria)
+                self.logger.warning("Entities not found in table %s (criteria=%s)", 
+                               self.schema.table_name, criteria)
                 return []
             
             entities = [self._map_to_entity(row) for row in result]
-            self.logger.debug(f"Entities found", 
-                         table=self.schema.table_name, 
-                         count=len(entities))
+            self.logger.debug("Entities found in table %s: %d entity(ies)", 
+                         self.schema.table_name, len(entities))
             
             return entities
             
         except Exception as e:
-            error_msg = f"Database error while finding entities by criteria"
-            self.logger.error(error_msg, 
-                         table=self.schema.table_name, 
-                         criteria=criteria, 
-                         error=str(e))
+            error_msg = "Database error while finding entities by criteria"
+            self.logger.error("%s in table %s (criteria=%s): %s", 
+                         error_msg, self.schema.table_name, criteria, str(e))
             raise DatabaseError(f"{error_msg} in {self.schema.table_name}: {str(e)}")
     
     def exists_by_id(self, id_value: str) -> bool:
@@ -149,10 +137,8 @@ class GenericRepository(Generic[T]):
         except Exception as e:
             if not isinstance(e, DatabaseError):
                 error_msg = "Database error while checking entity existence"
-                self.logger.error(error_msg, 
-                               table=self.schema.table_name, 
-                               id=id_value, 
-                               error=str(e))
+                self.logger.error("%s in table %s (id=%s): %s", 
+                               error_msg, self.schema.table_name, id_value, str(e))
                 raise DatabaseError(f"{error_msg} in {self.schema.table_name}: {str(e)}")
             raise e
     
@@ -179,11 +165,9 @@ class GenericRepository(Generic[T]):
                 
         except Exception as e:
             if not isinstance(e, DatabaseError):  # 이미 래핑된 예외는 다시 래핑하지 않음
-                error_msg = f"Database error while saving entity"
-                self.logger.error(error_msg, 
-                             table=self.schema.table_name, 
-                             entity=str(entity), 
-                             error=str(e))
+                error_msg = "Database error while saving entity"
+                self.logger.error("%s in table %s (entity=%s): %s", 
+                             error_msg, self.schema.table_name, str(entity), str(e))
                 raise DatabaseError(f"{error_msg} in {self.schema.table_name}: {str(e)}")
             raise e
     
@@ -202,26 +186,23 @@ class GenericRepository(Generic[T]):
         try:
             query = self.schema.insert_sql()
             params = self.schema.get_insert_params(entity)
+            id_value = getattr(entity, self.schema.primary_key.name)
             
-            self.logger.debug(f"Inserting entity", 
-                         table=self.schema.table_name, 
-                         id=getattr(entity, self.schema.primary_key.name))
+            self.logger.debug("Inserting entity into table %s (id=%s)", 
+                         self.schema.table_name, id_value)
             
             self.db.execute_query(query, params)
             
-            self.logger.info(f"Entity created", 
-                        table=self.schema.table_name,
-                        id=getattr(entity, self.schema.primary_key.name),
-                        name=getattr(entity, 'name', None))
+            name_value = getattr(entity, 'name', None)
+            self.logger.info("Entity created in table %s (id=%s, name=%s)", 
+                        self.schema.table_name, id_value, name_value)
             
             return entity
             
         except Exception as e:
-            error_msg = f"Database error while inserting entity"
-            self.logger.error(error_msg, 
-                         table=self.schema.table_name, 
-                         entity=str(entity), 
-                         error=str(e))
+            error_msg = "Database error while inserting entity"
+            self.logger.error("%s in table %s (entity=%s): %s", 
+                         error_msg, self.schema.table_name, str(entity), str(e))
             raise DatabaseError(f"{error_msg} in {self.schema.table_name}: {str(e)}")
     
     def _update(self, entity: T) -> T:
@@ -239,26 +220,23 @@ class GenericRepository(Generic[T]):
         try:
             query = self.schema.update_sql()
             params = self.schema.get_update_params(entity)
+            id_value = getattr(entity, self.schema.primary_key.name)
             
-            self.logger.debug(f"Updating entity", 
-                         table=self.schema.table_name, 
-                         id=getattr(entity, self.schema.primary_key.name))
+            self.logger.debug("Updating entity in table %s (id=%s)", 
+                         self.schema.table_name, id_value)
             
             self.db.execute_query(query, params)
             
-            self.logger.info(f"Entity updated", 
-                        table=self.schema.table_name,
-                        id=getattr(entity, self.schema.primary_key.name),
-                        name=getattr(entity, 'name', None))
+            name_value = getattr(entity, 'name', None)
+            self.logger.info("Entity updated in table %s (id=%s, name=%s)", 
+                        self.schema.table_name, id_value, name_value)
             
             return entity
             
         except Exception as e:
-            error_msg = f"Database error while updating entity"
-            self.logger.error(error_msg, 
-                         table=self.schema.table_name, 
-                         entity=str(entity), 
-                         error=str(e))
+            error_msg = "Database error while updating entity"
+            self.logger.error("%s in table %s (entity=%s): %s", 
+                         error_msg, self.schema.table_name, str(entity), str(e))
             raise DatabaseError(f"{error_msg} in {self.schema.table_name}: {str(e)}")
     
     def delete(self, id_value: str) -> bool:
@@ -278,31 +256,26 @@ class GenericRepository(Generic[T]):
             exists = self.exists_by_id(id_value)
             
             if not exists:
-                self.logger.warning(f"Cannot delete: Entity not found", 
-                               table=self.schema.table_name, 
-                               id=id_value)
+                self.logger.warning("Cannot delete: Entity not found in table %s (id=%s)", 
+                               self.schema.table_name, id_value)
                 return False
             
             query = self.schema.delete_sql()
             
-            self.logger.debug(f"Deleting entity", 
-                         table=self.schema.table_name, 
-                         id=id_value)
+            self.logger.debug("Deleting entity from table %s (id=%s)", 
+                         self.schema.table_name, id_value)
             
             self.db.execute_query(query, (id_value,))
             
-            self.logger.info(f"Entity deleted", 
-                        table=self.schema.table_name, 
-                        id=id_value)
+            self.logger.info("Entity deleted from table %s (id=%s)", 
+                        self.schema.table_name, id_value)
             
             return True
             
         except Exception as e:
-            error_msg = f"Database error while deleting entity"
-            self.logger.error(error_msg, 
-                         table=self.schema.table_name, 
-                         id=id_value, 
-                         error=str(e))
+            error_msg = "Database error while deleting entity"
+            self.logger.error("%s in table %s (id=%s): %s", 
+                         error_msg, self.schema.table_name, id_value, str(e))
             raise DatabaseError(f"{error_msg} in {self.schema.table_name}: {str(e)}")
     
     def _map_to_entity(self, row: Dict[str, Any]) -> T:

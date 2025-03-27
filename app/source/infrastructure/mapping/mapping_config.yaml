@@ -1,0 +1,60 @@
+document_types:
+  mapping:
+    "견적서": "견적서"
+    "거래명세서": "거래명세서"
+    "출장신청서": "출장신청서"
+    "출장정산신청서": "출장정산신청서"
+    "회의비사용신청서": "회의비사용신청서"
+    "회의록": "회의록"
+    "구매의뢰서": "구매의뢰서"
+    "전문가활용계획서": "전문가활용계획서"
+    "전문가자문확인서": "전문가자문확인서"
+    "지출결의서": "지출결의서"
+
+metadata:
+  fields:
+    document_number: "key"
+    date_issued: "fields.created"
+    receiver: "대상_업체"
+    writer: "fields.creator.displayName"
+    department: "fields.customfield_10019"
+    purpose: "fields.summary"
+
+supplier_info:
+  fields:
+    biz_id: "fields.customfield_10065.value"
+    rep_name: "fields.customfield_10066"
+    address: "fields.customfield_10067"
+    biz_type: "fields.customfield_10068"
+    biz_item: "fields.customfield_10069"
+    phone: "fields.customfield_10070"
+
+meeting_info:
+  fields:
+    meeting_date: "fields.customfield_10111"
+    meeting_place: "fields.customfield_10112"
+    meeting_agenda: "fields.customfield_10113"
+    meeting_summary: "fields.customfield_10114"
+
+internal_participants:
+  field: "fields.customfield_10115"
+  mapping:
+    jira_account_id: "accountId"
+    name: "displayName"
+    email: "emailAddress"
+
+external_participants:
+  field: "fields.customfield_10116"
+  mapping:
+    name: "name"
+    email: "email"
+    organization: "organization"
+
+items:
+  field: "fields.customfield_10075"
+  mapping:
+    name: "품목"
+    spec: "규격"
+    quantity: "수량"
+    unit_price: "단가"
+    purpose: "용도" 
