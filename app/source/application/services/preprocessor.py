@@ -58,7 +58,7 @@ class JiraPreprocessor:
                             parsed_table = self.markdown_parser.parse_table(field_value)
                             if parsed_table:
                                 self.logger.debug(f"Successfully parsed markdown table for '{field_name}': {len(parsed_table)} rows")
-                                # 파싱된 결과를 새로운 필드로 저장 (원본 필드명 + "_data")
+                                # 파싱된 결과를 원래 필드_data에 삽입
                                 fields[f"{field_name}_data"] = parsed_table
                                 self.logger.info(f"Created '{field_name}_data' with {len(parsed_table)} items")
                                 markdown_field_count += 1
@@ -70,7 +70,19 @@ class JiraPreprocessor:
                                 self.logger.warning(f"Parser returned empty result for '{field_name}' despite looking like a table")
                         except Exception as e:
                             self.logger.error(f"Error parsing markdown table for field '{field_name}': {str(e)}", exc_info=True)
-            
+                if field_name == "연구과제_선택":
+                    value = field_value["value"]
+                    self.logger.debug(f"Field '{field_name}' value: {value}")
+                    if value:
+                        # 괄호 안의 키를 추출
+                        match = re.search(r'\(([^)]+)\)', value)
+                        if match:
+                            key = match.group(1)
+                            self.logger.debug(f"Extracted key: {key}")
+                        fields[f"연구과제_선택_key"] = key
+                        self.logger.debug(f"Added '{field_name}_key' with value: {key}")
+                
+
             self.logger.info(f"Processed {markdown_field_count} markdown tables in 'fields' object")
         
         # fields 외의 최상위 필드 처리 - 필드 목록을 미리 복사

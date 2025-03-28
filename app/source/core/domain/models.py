@@ -28,6 +28,7 @@ class Employee:
     phone: str
     
     # 선택적 필드
+    affiliation: Optional[str] = None
     jira_account_id: Optional[str] = None
     bank_name: Optional[str] = None
     account_number: Optional[str] = None

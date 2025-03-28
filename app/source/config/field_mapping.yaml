@@ -3,14 +3,15 @@ domain_config:
     query_key: name
     id_field: company_id
   employee:
-    query_key: account_id
-    id_field: employee_id
+    query_key: jira_account_id  
+    id_field: accountId
   research:
     query_key: code
     id_field: research_id
   expert:
     query_key: id
     id_field: expert_id
+  
 
 field_patterns:
   # Company ID 필드 패턴
@@ -34,7 +35,7 @@ field_patterns:
       - name: company_name
       - name: address
       - name: rep_name
-      - name: phone
+      - name: phone'
   사업자_선택:
     type: company
     value_key: value
@@ -45,34 +46,40 @@ field_patterns:
       - name: phone
 
   # Employee ID 필드 패턴
-  employee_id:
+  creator:
     type: employee
+    id_field: accountId
+    value_key: accountId
     enrich_fields:
       - name: name
       - name: department
       - name: position
       - name: email
-  applicant_id:
+      - name: affiliation
+      - name: phone
+      - name: signature
+      - name: stamp
+      - name: bank_name
+      - name: account_number
+      - name: birth_date
+  assignee:
     type: employee
+    id_field: accountId
+    value_key: accountId
     enrich_fields:
       - name: name
       - name: department
       - name: position
       - name: email
-  writer_id:
-    type: employee
-    enrich_fields:
-      - name: name
-      - name: department
-      - name: position
-      - name: email
-  manager_id:
-    type: employee
-    enrich_fields:
-      - name: name
-      - name: department
-      - name: position
-      - name: email
+      - name: affiliation
+      - name: phone
+      - name: signature
+      - name: stamp
+      - name: bank_name
+      - name: account_number
+      - name: birth_date
+    
+  
 
   # Research ID 필드 패턴
   project_id:
@@ -81,12 +88,18 @@ field_patterns:
       - name: name
       - name: code
       - name: description
-  research_id:
+  연구과제_선택_key:
     type: research
     enrich_fields:
-      - name: name
-      - name: code
+      - name: project_name
+      - name: project_code
+      - name: project_period
+      - name: project_manager
+      - name: status
       - name: description
+      - name: project_start_date
+      - name: project_end_date
+      - name: budget
 
   # Expert ID 필드 패턴
   expert_id:
@@ -101,26 +114,21 @@ field_patterns:
   employee_list:
     type: employee
     is_list: true
+    id_field: accountId
     enrich_fields:
       - name: name
       - name: department
       - name: position
       - name: email
 
-participant_lists:
-  internal_participants_data:
+  회의_참석자_내부_인원:
     type: employee
-    id_field: employee_id
+    is_list: true
+    id_field: accountId
     enrich_fields:
       - name: name
+      - name: affiliation
       - name: department
       - name: position
       - name: email
-  external_participants_data:
-    type: company
-    id_field: company_id
-    enrich_fields:
-      - name: name
-      - name: address
-      - name: representative
-      - name: phone 
+  

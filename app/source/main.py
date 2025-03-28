@@ -3,16 +3,18 @@ import sys
 import argparse
 import logging
 from typing import Dict, Any, Optional
-from application.dto.document_dto import DocumentRequestDTO, DocumentResponseDTO
-from config.settings import get_settings
-from config.di_container import DIContainer
-from core.exceptions import DocumentAutomationError, RenderingError
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
+from app.source.application.dto.document_dto import DocumentRequestDTO, DocumentResponseDTO
+from app.source.config.settings import get_settings
+from app.source.config.di_container import DIContainer
+from app.source.core.exceptions import DocumentAutomationError, RenderingError
+from flask import Flask, request, jsonify, abort
 from pydantic import ValidationError
 
-# FastAPI 앱 인스턴스 생성
-app = FastAPI()
+# Flask 앱 인스턴스 생성
+app = Flask(__name__, 
+           static_folder="../resources",  # app/resources 디렉토리를 정적 파일로 제공
+           template_folder="../source/templates")   # app/source/templates 디렉토리를 템플릿으로 제공
+
 container: Optional[DIContainer] = None
 
 def get_container() -> DIContainer:
@@ -117,6 +119,40 @@ def process_jira_issue(container: DIContainer, issue_key: str) -> Optional[Dict[
     except Exception as e:
         logger.error("Error processing Jira issue %s: %s", issue_key, str(e), exc_info=True)
         return None
+    
+def process_save_document(request_data: Dict[str, Any], container: DIContainer, result: Dict[str, Any]):
+    """
+    요청 데이터에서 문서 저장 경로를 추출하고, 문서를 저장합니다.
+    """
+    raise NotImplementedError("Not implemented")
+
+def initialize_app(config_path=None, log_level="INFO"):
+    """Flask 앱 초기화 함수"""
+    global container
+    
+    # 로깅 설정
+    logger = setup_logging(log_level)
+    logger.info("Starting Flask app with log level: %s", log_level)
+    
+    # 설정 로드
+    config = load_config()
+    
+    # 출력 디렉토리 생성
+    os.makedirs(config["output_dir"], exist_ok=True)
+    
+    # DI 컨테이너 초기화
+    container = DIContainer(config, logger)
+    
+    # Flask 애플리케이션 추가 설정
+    app.config['TEMPLATES_AUTO_RELOAD'] = True
+    
+    # 시작 로그
+    logger.info("Flask application initialized successfully")
+    
+    return app
+
+# 앱 초기화 - 컨테이너에서 자동 시작을 위해
+initialize_app(log_level=os.environ.get("LOG_LEVEL", "INFO"))
 
 def main():
     """메인 함수"""
@@ -145,6 +181,7 @@ def main():
         os.makedirs(config["output_dir"], exist_ok=True)
         
         # DI 컨테이너 초기화
+        global container
         container = DIContainer(config, logger)
         
         # Jira 이슈 처리
@@ -161,54 +198,113 @@ def main():
         logger.error("Unexpected error: %s", str(e), exc_info=True)
         sys.exit(1)
 
-@app.post("/api/documents")
-async def create_document(request: DocumentRequestDTO):
+@app.route("/api/documents", methods=["POST"])
+def create_document():
     """문서 생성 API"""
     try:
-        # DTO를 딕셔너리로 변환
-        data = request.model_dump()
+        request_data = request.get_json()
+        issue_key = request_data.get("issue_key")
         
-        # 문서 서비스 호출
-        result = get_container().document_service.create_document(data)
+        if not issue_key:
+            return jsonify({"error": "Missing issue_key parameter"}), 400
+            
+        result = process_jira_issue(get_container(), issue_key)
         
-        get_container().logger.debug("Result : %s", result)
-        # 응답 변환 및 반환
-        response = DocumentResponseDTO(
-            document_id=result["document_id"],
-            document_type=result["document_type"],
-            created_at=result["created_at"],
-            html=result.get("html"),
-            pdf_url=f"/api/documents/{result['document_id']}/pdf"
-        )
+        if not result:
+            return jsonify({"error": "Failed to process Jira issue"}), 500
+            
+        # 저장 처리
+        if "save_path" in request_data:
+            process_save_document(request_data, get_container(), result)
         
-        return response
-        
-    except ValidationError as e:
-        # 400 Bad Request - 유효하지 않은 요청
-        error_detail = str(e)
-        get_container().logger.warning("Validation error: %s", error_detail)
-        raise HTTPException(
-            status_code=400,
-            detail={"message": "유효하지 않은 문서 요청", "error": error_detail}
-        )
-        
-    except RenderingError as e:
-        # 422 Unprocessable Entity - 유효한 요청이지만 처리할 수 없음
-        error_detail = str(e)
-        get_container().logger.error("Rendering error: %s", error_detail)
-        raise HTTPException(
-            status_code=422,
-            detail={"message": "문서 렌더링 실패", "error": error_detail}
-        )
-        
-    except DocumentAutomationError as e:
-        # 500 Internal Server Error - 서버 오류
-        error_detail = str(e)
-        get_container().logger.error("Document automation error: %s", error_detail)
-        raise HTTPException(
-            status_code=500,
-            detail={"message": "문서 생성 실패", "error": error_detail}
-        )
+        return jsonify(result)
+    
+    except Exception as e:
+        app.logger.error(f"Error creating document: {str(e)}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
+@app.route("/api/debug/file-check", methods=["GET"])
+def check_files():
+    """파일 시스템 디버깅 API"""
+    try:
+        # 디버깅 대상 경로 (쿼리 파라미터에서 가져오거나 기본값 사용)
+        file_path = request.args.get("path", "")
+        base_dir = request.args.get("base_dir", "/app")
+        
+        # 결과 저장
+        result = {
+            "request_info": {
+                "file_path": file_path,
+                "base_dir": base_dir
+            },
+            "file_checks": [],
+            "directory_listing": {}
+        }
+        
+        # 전체 경로 생성
+        full_path = os.path.join(base_dir, file_path)
+        result["full_path"] = full_path
+        
+        # 파일 또는 디렉토리 존재 여부 확인
+        result["exists"] = os.path.exists(full_path)
+        result["is_file"] = os.path.isfile(full_path) if result["exists"] else False
+        result["is_dir"] = os.path.isdir(full_path) if result["exists"] else False
+        
+        # 여러 경로 변형 확인
+        check_paths = [
+            full_path,
+            os.path.join("/app/resources", file_path.replace('static/', '')),
+            os.path.join("/workspace/app/resources", file_path.replace('static/', '')),
+            os.path.join(base_dir, "resources", file_path.replace('static/', ''))
+        ]
+        
+        for path in check_paths:
+            result["file_checks"].append({
+                "path": path,
+                "exists": os.path.exists(path),
+                "is_file": os.path.isfile(path) if os.path.exists(path) else False,
+                "is_dir": os.path.isdir(path) if os.path.exists(path) else False
+            })
+        
+        # 디렉토리인 경우 내용 나열
+        if result["is_dir"]:
+            try:
+                files = os.listdir(full_path)
+                result["directory_listing"]["files"] = files
+                result["directory_listing"]["count"] = len(files)
+            except Exception as e:
+                result["directory_listing"]["error"] = str(e)
+        
+        # 정적 파일 디렉토리 내용 나열
+        try:
+            static_dir = os.path.join(base_dir, "resources")
+            if os.path.isdir(static_dir):
+                result["static_directory"] = {
+                    "path": static_dir,
+                    "files": os.listdir(static_dir)[:20],  # 처음 20개만 표시
+                    "count": len(os.listdir(static_dir))
+                }
+                
+                # signature 폴더 확인
+                sig_dir = os.path.join(static_dir, "signature")
+                if os.path.isdir(sig_dir):
+                    result["signature_directory"] = {
+                        "path": sig_dir,
+                        "files": os.listdir(sig_dir),
+                        "count": len(os.listdir(sig_dir))
+                    }
+        except Exception as e:
+            result["static_directory_error"] = str(e)
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# 앱 실행
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1:
+        # 명령행 실행 (CLI)
+        main()
+    else:
+        # 웹 서버 실행
+        app.run(debug=True, host="0.0.0.0", port=8000)

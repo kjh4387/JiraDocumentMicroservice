@@ -95,16 +95,7 @@ class DocumentResponseDTO(BaseModel):
 
 class DocumentRequestDTO(BaseModel):
     """문서 요청 DTO"""
-    document_type: str = Field(..., description="문서 유형")
-    metadata: DocumentMetadataDTO
-    supplier_info: Optional[SupplierInfoDTO] = None
-    item_list: Optional[List[ItemDTO]] = None
-    amount_summary: Optional[AmountSummaryDTO] = None
-    participants: Optional[List[ParticipantDTO]] = None
-    research_project_info: Optional[ResearchProjectInfoDTO] = None
-    travel_list: Optional[List[TravelInfoDTO]] = None
-    expert_info: Optional[ExpertInfoDTO] = None
-    approval_list: Optional[List[ApproverDTO]] = None
+    issue_key: str = Field(..., description="Jira 이슈 키")
     
     class Config:
         """Pydantic 설정"""

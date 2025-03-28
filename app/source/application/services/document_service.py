@@ -48,6 +48,14 @@ class DocumentService:
             if 'issuetype' in data['fields']:
                 self.logger.debug("Issue type: %s", data['fields']['issuetype'])
         
+        # 서명 필드 확인 (디버깅)
+        if 'fields' in data and 'assignee' in data['fields']:
+            assignee = data['fields']['assignee']
+            if isinstance(assignee, dict) and 'signature' in assignee:
+                self.logger.debug(f"Signature path found: {assignee['signature']}")
+            else:
+                self.logger.warning("No signature field found in assignee")
+        
         # Jira fields에서 document_type 추출 - 여러 방법으로 시도
         document_type = None
         
@@ -111,6 +119,17 @@ class DocumentService:
             html = self.renderer.render(document_type, render_data)
             self.logger.debug("Document rendered to HTML (length: %d)", len(html))
             
+            # 디버깅용 HTML 저장
+            try:
+                debug_dir = os.path.join("debug")
+                os.makedirs(debug_dir, exist_ok=True)
+                debug_html_path = os.path.join(debug_dir, f"debug_{document_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html")
+                with open(debug_html_path, 'w', encoding='utf-8') as f:
+                    f.write(html)
+                self.logger.debug(f"Debug HTML saved to: {debug_html_path}")
+            except Exception as e:
+                self.logger.warning(f"Failed to save debug HTML: {str(e)}")
+            
             # PDF 생성
             pdf = self.pdf_generator.generate(html)
             self.logger.debug("PDF generated (size: %d bytes)", len(pdf))
@@ -151,15 +170,33 @@ class DocumentService:
                                document_type, str(e), exc_info=True)
             raise DocumentAutomationError(f"문서 생성 중 오류 발생: {str(e)}")
     
-    def save_pdf(self, pdf_data: bytes, output_path: str) -> str:
-        """PDF 파일 저장"""
-        self.logger.debug("Saving PDF to file: %s", output_path)
+    def save_pdf(self, pdf_data: bytes, output_path: str, overwrite: bool = True) -> str:
+        """PDF 파일 저장
+        
+        Args:
+            pdf_data: PDF 파일 바이트 데이터
+            output_path: 저장할 파일 경로
+            overwrite: 파일이 이미 존재할 경우 덮어쓰기 여부 (기본값: True)
+            
+        Returns:
+            저장된 파일 경로
+            
+        Raises:
+            FileExistsError: 파일이 이미 존재하고 overwrite가 False인 경우
+            IOError: 파일 저장 중 오류 발생 시
+        """
+        self.logger.debug("Saving PDF to file: %s (overwrite: %s)", output_path, overwrite)
         
         # 디렉토리 확인 및 생성
         output_dir = os.path.dirname(output_path)
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
             self.logger.debug("Created output directory: %s", output_dir)
+        
+        # 파일 존재 확인
+        if not overwrite and os.path.exists(output_path):
+            self.logger.warning("File already exists and overwrite is False: %s", output_path)
+            raise FileExistsError(f"File already exists: {output_path}")
         
         # PDF 저장
         try:

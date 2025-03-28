@@ -51,7 +51,7 @@ class EmployeeRepositoryV2(GenericRepository[Employee]):
                 raise DatabaseError(f"{error_msg}: {str(e)}")
             raise e
     
-    def find_by_account_id(self, account_id: str) -> Optional[Employee]:
+    def find_by_jira_account_id(self, account_id: str) -> Optional[Employee]:
         """Jira 계정 ID로 직원 검색
         
         Args:

@@ -101,7 +101,9 @@ class SelectiveFieldEnricher(DataEnricher):
             
             # 필드가 딕셔너리이고 value_key가 지정된 경우 해당 키의 값 사용
             actual_value = field_value
-            if isinstance(field_value, dict) and hasattr(pattern, 'value_key') and pattern.value_key:
+            field_is_dict = isinstance(field_value, dict)
+            
+            if field_is_dict and pattern.value_key:
                 if pattern.value_key in field_value:
                     actual_value = field_value[pattern.value_key]
                     self.logger.debug("Using value from key '%s': %s", pattern.value_key, actual_value)
@@ -114,17 +116,26 @@ class SelectiveFieldEnricher(DataEnricher):
             if not entity:
                 return
             
-            # 필드 이름에서 '_id' 부분을 제거한 접두사 계산
-            prefix = field_name.replace('_id', '')
-            self.logger.debug("Calculated prefix: %s", prefix)
-            
             # 보강 필드 추가
+            # 필드가 딕셔너리가 아니면 딕셔너리로 변환
+            if not field_is_dict:
+                # 원본 값 저장
+                enriched_dict = {
+                    "value": field_value,
+                    "id": getattr(entity, "id", None)
+                }
+                # fields 딕셔너리에 업데이트된 값 설정
+                fields[field_name] = enriched_dict
+                self.logger.debug("Converted field %s to dictionary: %s", field_name, enriched_dict)
+            else:
+                enriched_dict = field_value
+            
+            # 보강 필드 추가 (딕셔너리 내부에 추가)
             for enrich_field in pattern.enrich_fields:
-                field_key = f"{prefix}_{enrich_field.name}"
                 field_value = getattr(entity, enrich_field.name, None)
                 if field_value is not None:
-                    fields[field_key] = field_value
-                    self.logger.debug("Added enriched field: %s = %s", field_key, field_value)
+                    enriched_dict[enrich_field.name] = field_value
+                    self.logger.debug("Added enriched field: %s = %s", enrich_field.name, field_value)
                 else:
                     self.logger.debug("No value found for field: %s", enrich_field.name)
             

@@ -73,6 +73,28 @@ class ResearchRepositoryV2(GenericRepository[Research]):
                 raise DatabaseError(f"{error_msg}: {str(e)}")
             raise e
     
+    def find_by_code(self, code: str) -> Optional[Research]:
+        """코드로 연구 과제 검색
+        
+        Args:
+            code: 검색할 코드
+
+        Returns:
+            연구 과제 객체 또는 None
+            
+        Raises:
+            DatabaseError: 데이터베이스 조회 중 오류 발생 시
+        """
+        try:
+            criteria = {"project_code": code}
+            results = self.find_by_criteria(criteria)
+            return results[0] if results else None
+        except Exception as e:
+            if not isinstance(e, DatabaseError):
+                error_msg = "Database error while finding research by code"
+                self.logger.error("%s: %s (code=%s)", error_msg, str(e), code)
+                raise DatabaseError(f"{error_msg}: {str(e)}")
+    
     def find_by_status(self, status: str) -> List[Research]:
         """상태로 연구 과제 목록 검색
         

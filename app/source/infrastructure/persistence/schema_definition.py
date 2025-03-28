@@ -162,6 +162,7 @@ def create_employee_schema() -> TableSchema:
         ColumnDefinition("name", "VARCHAR(50)", nullable=False),
         ColumnDefinition("email", "VARCHAR(100)", nullable=False),
         ColumnDefinition("jira_account_id", "VARCHAR(100)"),
+        ColumnDefinition("affiliation", "VARCHAR(100)"),
         ColumnDefinition("department", "VARCHAR(50)"),
         ColumnDefinition("position", "VARCHAR(50)"),
         ColumnDefinition("phone", "VARCHAR(20)"),

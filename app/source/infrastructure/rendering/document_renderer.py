@@ -10,6 +10,7 @@ from app.source.infrastructure.rendering.filter_util import (
 )
 import os
 from typing import Optional
+import base64
 
 class JinjaDocumentRenderer(DocumentRenderer):
     """Jinja2를 사용한 문서 렌더링 - 통합 템플릿 방식"""
@@ -25,6 +26,7 @@ class JinjaDocumentRenderer(DocumentRenderer):
         self.logger.debug("Initializing JinjaDocumentRenderer with template_dir: %s", template_dir)
         
         try:
+            # Jinja2 환경 설정
             self.template_env = Environment(
                 loader=FileSystemLoader(template_dir),
                 autoescape=True
@@ -45,6 +47,126 @@ class JinjaDocumentRenderer(DocumentRenderer):
             # 정렬 필터 추가
             self.template_env.filters['currency_aligned'] = format_currency_aligned
             self.template_env.filters['number_aligned'] = format_number_aligned
+            
+            # 정적 파일 URL 생성 함수 추가
+            def static_url(path):
+                """정적 파일 URL 생성"""
+                if path is None:
+                    self.logger.warning("Attempt to create static URL for None path")
+                    return ""
+                    
+                self.logger.debug(f"Creating static URL for path: '{path}'")
+                # static/ 접두어 제거 (Flask가 자동으로 /static 접두어를 추가함)
+                new_path = path.replace('static/', '')
+                result = f'/static/{new_path}'
+                self.logger.debug(f"Generated static URL: '{result}'")
+                return result
+            
+            # Base64 인코딩 이미지 생성 함수 추가
+            def image_to_base64(path):
+                """이미지를 Base64로 인코딩하여 데이터 URL 생성"""
+                if path is None:
+                    self.logger.warning("Attempt to create base64 image for None path")
+                    return ""
+                
+                self.logger.debug(f"Converting image to base64: '{path}'")
+                
+                # 디버깅: 서명 디렉토리 내용 확인
+                signature_dir = "/workspace/app/resources/signature"
+                try:
+                    if os.path.exists(signature_dir):
+                        files = os.listdir(signature_dir)
+                        self.logger.debug(f"Files in signature directory: {files}")
+                except Exception as e:
+                    self.logger.warning(f"Error listing signature directory: {str(e)}")
+                
+                # 서명 이미지 경로 특별 처리
+                if 'signature' in path or path.endswith('.png'):
+                    # 파일명만 있는 경우 (예: '김자현.png')
+                    if '/' not in path:
+                        self.logger.debug(f"Signature file name only, adding path: '{path}'")
+                        path = f"signature/{path}"
+                
+                # 가능한 경로 목록
+                possible_paths = [
+                    path,
+                    os.path.join('/app/resources', path),
+                    os.path.join('/workspace/app/resources', path),
+                    # 서명 파일을 위한 추가 경로
+                    os.path.join('/app/resources/signature', os.path.basename(path)),
+                    os.path.join('/workspace/app/resources/signature', os.path.basename(path)),
+                ]
+                
+                # 경로에서 'static/' 접두어 제거 버전 추가
+                cleaned_paths = []
+                for p in possible_paths:
+                    cleaned_paths.append(p.replace('static/', ''))
+                possible_paths.extend(cleaned_paths)
+                
+                self.logger.debug(f"Checking paths: {possible_paths}")
+                
+                for img_path in possible_paths:
+                    try:
+                        # 경로 정규화
+                        norm_path = os.path.normpath(img_path)
+                        self.logger.debug(f"Checking path: {norm_path}")
+                        
+                        if os.path.exists(norm_path):
+                            self.logger.debug(f"Path exists: {norm_path}")
+                            if os.path.isfile(norm_path):
+                                self.logger.debug(f"Image file found at: {norm_path}")
+                                try:
+                                    with open(norm_path, 'rb') as img_file:
+                                        encoded_string = base64.b64encode(img_file.read()).decode('utf-8')
+                                        
+                                        # 이미지 유형 감지 (확장자 기반)
+                                        file_ext = os.path.splitext(norm_path)[1].lower()
+                                        if file_ext == '.png':
+                                            mime_type = 'image/png'
+                                        elif file_ext in ['.jpg', '.jpeg']:
+                                            mime_type = 'image/jpeg'
+                                        elif file_ext == '.gif':
+                                            mime_type = 'image/gif'
+                                        else:
+                                            mime_type = 'image/png'  # 기본값
+                                        
+                                        result = f"data:{mime_type};base64,{encoded_string}"
+                                        self.logger.debug(f"Successfully created base64 image from {norm_path}")
+                                        return result
+                                except Exception as e:
+                                    self.logger.warning(f"Error reading file {norm_path}: {str(e)}")
+                            else:
+                                self.logger.debug(f"Path exists but is not a file: {norm_path}")
+                        else:
+                            self.logger.debug(f"Path does not exist: {norm_path}")
+                    except Exception as e:
+                        self.logger.warning(f"Error checking path {img_path}: {str(e)}")
+                
+                # 파일 찾을 수 없는 경우 대체 이미지 사용
+                self.logger.warning(f"Could not find valid image file at any path for {path}")
+                
+                # 직접 서명 디렉토리에서 파일 이름만으로 찾기 시도
+                basename = os.path.basename(path)
+                signature_dir = "/workspace/app/resources/signature"
+                if os.path.exists(signature_dir):
+                    try:
+                        files = os.listdir(signature_dir)
+                        self.logger.debug(f"Looking for {basename} in {files}")
+                        for file in files:
+                            if file == basename:
+                                filepath = os.path.join(signature_dir, file)
+                                self.logger.debug(f"Found exact match: {filepath}")
+                                with open(filepath, 'rb') as img_file:
+                                    encoded_string = base64.b64encode(img_file.read()).decode('utf-8')
+                                    return f"data:image/png;base64,{encoded_string}"
+                    except Exception as e:
+                        self.logger.warning(f"Error finding file in signature directory: {str(e)}")
+                        
+                return ""
+            
+            self.template_env.globals['static_url'] = static_url
+            self.template_env.globals['image_to_base64'] = image_to_base64
+            
         except Exception as e:
             self.logger.error("Failed to initialize document renderer: %s", str(e))
             raise
@@ -66,6 +188,45 @@ class JinjaDocumentRenderer(DocumentRenderer):
             template_name = self._get_template_path(document_type)
             self.logger.debug("Using template: %s", template_name)
             
+            # 서명 이미지 경로 확인 및 존재 여부 검사 (디버깅)
+            if 'assignee' in data.get('fields', {}):
+                assignee = data['fields']['assignee']
+                if isinstance(assignee, dict) and 'signature' in assignee:
+                    sig_path = assignee['signature']
+                    self.logger.debug(f"Original signature path: {sig_path}")
+                    
+                    # 정적 URL 변환
+                    static_sig_url = self.template_env.globals['static_url'](sig_path)
+                    self.logger.debug(f"Static signature URL: {static_sig_url}")
+                    
+                    # 실제 파일 경로 확인
+                    if sig_path.startswith('static/'):
+                        # static/ 접두어 제거 - Flask는 이미 static_folder를 "/static" URL에 매핑함
+                        stripped_path = sig_path.replace('static/', '')
+                        real_path = os.path.join('/app/resources', stripped_path)
+                    else:
+                        real_path = os.path.join('/app/resources', sig_path)
+                    
+                    # 파일 존재 여부 확인
+                    if os.path.exists(real_path):
+                        self.logger.debug(f"Signature file exists at: {real_path}")
+                    else:
+                        self.logger.warning(f"Signature file NOT found at: {real_path}")
+                        # 다른 가능한 경로 시도
+                        alternative_paths = [
+                            sig_path,
+                            os.path.join('/app/resources', sig_path),
+                            os.path.join('/app', sig_path),
+                            os.path.join('/workspace/app/resources', sig_path.replace('static/', '')),
+                            os.path.join('/app/static', sig_path.replace('static/', ''))
+                        ]
+                        for alt_path in alternative_paths:
+                            if os.path.exists(alt_path):
+                                self.logger.debug(f"Signature file found at alternative path: {alt_path}")
+                                break
+                            else:
+                                self.logger.debug(f"Tried alternative path but not found: {alt_path}")
+            
             # 템플릿에 전달할 컨텍스트 준비
             # Jira 데이터를 그대로 전달하되, 최상위 키도 접근 가능하게 함
             template_context = {
@@ -77,29 +238,18 @@ class JinjaDocumentRenderer(DocumentRenderer):
                 self.logger.debug("Adding fields to template context")
                 template_context.update(data['fields'])
             
-            
-            # Available keys in context for debugging
-            
             # 템플릿 렌더링
             template = self.template_env.get_template(template_name)
             self.logger.debug("Template loaded successfully")
             
             try:
-                self.logger.debug("Rendering template with context: %s", template_context)
+                self.logger.debug("Rendering template with context")
                 rendered_html = template.render(**template_context)
                 self.logger.debug("Template rendered successfully")
             except Exception as template_error:
-                self.logger.error("Template rendering error: %s", str(template_error), exc_info=True)
-                # Try to identify which variable is causing the problem
-                for key, value in template_context.items():
-                    if key != 'jira':  # Skip large objects
-                        try:
-                            self.logger.debug("Testing context key: %s = %r", key, value)
-                            # Try to render a simple template with just this variable
-                            test_template = self.template_env.from_string("{{ " + key + " }}")
-                            test_template.render(**{key: value})
-                        except Exception as e:
-                            self.logger.error("Problem with context key %s: %s", key, str(e))
+                self.logger.error("Template rendering error: %s", 
+                                str(template_error), exc_info=True)
+                self._debug_template_context(template_context)
                 raise
             
             self.logger.debug("Document rendered successfully: %s, template: %s", document_type, template_name)
@@ -113,6 +263,19 @@ class JinjaDocumentRenderer(DocumentRenderer):
         except Exception as e:
             self.logger.error("Document rendering failed: %s, error: %s", document_type, str(e))
             raise RenderingError(f"문서 '{document_type}' 렌더링 실패: {str(e)}")
+    
+    def _debug_template_context(self, template_context):
+        """템플릿 컨텍스트 디버깅"""
+        # 문제가 있는 변수 식별
+        for key, value in template_context.items():
+            if key != 'jira':  # 큰 객체 건너뛰기
+                try:
+                    self.logger.debug("Testing context key: %s = %r", key, value)
+                    # 이 변수만으로 간단한 템플릿 렌더링 시도
+                    test_template = self.template_env.from_string("{{ " + key + " }}")
+                    test_template.render(**{key: value})
+                except Exception as e:
+                    self.logger.error("Problem with context key %s: %s", key, str(e))
     
     def _get_template_path(self, document_type: str) -> str:
         """문서 유형에 맞는 템플릿 파일 경로 찾기"""
@@ -176,8 +339,6 @@ class JinjaDocumentRenderer(DocumentRenderer):
         
         self.logger.debug("Template mapping resolved: %s -> %s", document_type, mapping[document_type])
         return mapping[document_type]
-    
-    
     
     def _generate_data_html(self, data: Any) -> str:
         """데이터를 HTML로 변환"""

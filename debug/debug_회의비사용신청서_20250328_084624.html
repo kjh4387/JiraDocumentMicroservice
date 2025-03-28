@@ -110,21 +110,21 @@
             <tbody>
                 <tr>
                     <td style="width: 20%;">연구 기간</td>
-                    <td>{{ 연구과제_선택_key.project_period }}</td>
+                    <td>2023-04-01~2027-03-31</td>
                 </tr>
                 <tr>
                     <td>연구 과제명</td>
-                    <td>{{ 연구과제_선택_key.project_name }}</td>
+                    <td>배터리/ESS/전기자동차 화재 확산과 피해 예측을 위한 인공지능 응용형 시뮬레이션 프로그램 개발</td>
                 </tr>
             </tbody>
         </table>
 
         <table>
             <tbody>
-                <tr><td style="width: 20%;">회의 목적</td><td>{{ 회의목적 }}</td></tr>
-                <tr><td>일시</td><td>{{ 회의일자 }}</td></tr>
-                <tr><td>장소</td><td>{{ 회의_장소 }}</td></tr>
-                <tr><td>금액</td><td>{{ 사용금액 }}</td></tr>
+                <tr><td style="width: 20%;">회의 목적</td><td>자동생성성공하면안되겠니</td></tr>
+                <tr><td>일시</td><td>2025-03-21</td></tr>
+                <tr><td>장소</td><td>메테오시뮬레이션 본사</td></tr>
+                <tr><td>금액</td><td>100000.0</td></tr>
             </tbody>
         </table>
 
@@ -138,31 +138,43 @@
                 </tr>
             </thead>
             <tbody>
-                {% for participant in 회의_참석자_내부_인원 %}
+                
                 <tr>
-                    <td>{{ participant.affiliation }}</td>
-                    <td>{{ participant.position }}</td>
-                    <td>{{ participant.name }}</td>
+                    <td>메테오시뮬레이션</td>
+                    <td>주임연구원</td>
+                    <td>강주원</td>
                 </tr>
-                {% endfor %}
-                {% for participant in 회의_참석자_외부_인원_data %}
+                
                 <tr>
-                    <td>{{ participant.소속 }}</td>
-                    <td>{{ participant.직위 }}</td>
-                    <td>{{ participant.성명 }}</td>
+                    <td>메테오시뮬레이션</td>
+                    <td>주임연구원</td>
+                    <td>김자현</td>
                 </tr>
-                {% endfor %}
+                
+                <tr>
+                    <td>메테오시뮬레이션</td>
+                    <td>대표</td>
+                    <td>김지태</td>
+                </tr>
+                
+                <tr>
+                    <td>메테오시뮬레이션</td>
+                    <td>주임연구원</td>
+                    <td>황지인</td>
+                </tr>
+                
+                
             </tbody>
         </table>
 
         <div class="footer">
             <div class="footer-border"></div>
             <div class="footer-content">
-                <h3>작성일: {{ 회의일자 }}</h3>
-                <h3>신청인) 소속: {{ assignee.affiliation }} 성명: {{ assignee.name }} <span class="signature-container">(인 또는 서명) 
-                    {% if assignee and assignee.name %}
-                    <img src="{{ assignee.signature }}" class="signature-image" alt="서명">
-                    {% endif %}
+                <h3>작성일: 2025-03-21</h3>
+                <h3>신청인) 소속: 메테오시뮬레이션 성명: 김자현 <span class="signature-container">(인 또는 서명) 
+                    
+                    <img src="" class="signature-image" alt="서명">
+                    
                 </span></h3>
             </div>
         </div>

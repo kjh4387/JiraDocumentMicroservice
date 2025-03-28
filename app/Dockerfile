@@ -25,6 +25,10 @@ RUN apt-get update && apt-get install -y \
 # 소스 복사
 COPY . .
 
+# 출력 디렉토리 생성
+RUN mkdir -p /app/output
+
 EXPOSE 8000
 
-CMD ["uvicorn", "source.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Flask 서버 실행
+CMD ["flask", "--app", "source.main:app", "run", "--host", "0.0.0.0", "--port", "8000"]
