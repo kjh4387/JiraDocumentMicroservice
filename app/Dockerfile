@@ -1,6 +1,6 @@
 FROM python:3.10-slim
 
-WORKDIR /app
+WORKDIR /workspace
 
 # 의존성 복사 및 설치
 COPY requirements.txt .
@@ -23,12 +23,12 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # 소스 복사
-COPY . .
+COPY . ./app
 
 # 출력 디렉토리 생성
-RUN mkdir -p /app/output
+RUN mkdir -p /workspace/app/output
 
 EXPOSE 8000
 
 # Flask 서버 실행
-CMD ["flask", "--app", "source.main:app", "run", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["flask", "--app", "app.source.main:app", "run", "--host", "0.0.0.0", "--port", "8000"]

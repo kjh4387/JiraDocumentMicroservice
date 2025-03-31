@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회의비사용신청서</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        
+        @media print {
+            html, body {
+                width: 210mm;
+                height: 297mm;
+                margin: 0;
+                padding: 0;
+            }
+            .A4 {
+                margin: 0;
+                border: initial;
+                border-radius: initial;
+                width: initial;
+                min-height: initial;
+                box-shadow: initial;
+                background: initial;
+                page-break-after: always;
+            }
+        }
+        
+        .A4 {
+            display: flex;
+            flex-direction: column;
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 20mm;
+            box-sizing: border-box;
+            background: white;
+        }
+    
+        table {
+            width: 100%;
+            margin-top: 10mm;
+            border: 1mm solid black;
+            border-collapse: collapse;
+        }
+    
+        th, td {
+            border: 0.5mm solid #cccccc;
+            padding: 10px;
+            text-align: left;
+            height: 30px;
+        }
+    
+        .head {
+            text-align: center;
+            padding-bottom: 10mm;
+            border-bottom: 2px solid black;
+        }
+    
+        .footer {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: flex-end;
+            width: 100%;
+            padding: 5mm 0;
+            height: 30mm;
+            box-sizing: border-box;
+            margin-top: auto;
+        }
+    
+        .footer-border {
+            width: 100%;
+            border-top: 1px solid black;
+            margin-bottom: 5mm;
+        }
+    
+        .footer-content {
+            text-align: right;
+        }
+        
+        .signature-container {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .signature-image {
+            position: absolute;
+            top: -20px; /* (인 또는 서명) 위로 덮기 */
+            left: 160px;
+            width: 120px; /* 서명 크기 */
+            height: auto;
+            opacity: 0.5; /* 반투명으로 텍스트가 보이도록 */
+            z-index: 1; /* 텍스트 위로 덮기 */
+            pointer-events: none; /* 클릭 방지 */
+        }
+    
+    </style>
+</head>
+<body>
+    <div class="A4">
+        <div class="head">
+            <div style="font-size: 2em;">회의비사용신청서</div>
+        </div>
+
+        <table>
+            <tbody>
+                <tr>
+                    <td style="width: 20%;">연구 기간</td>
+                    <td>2023-04-01~2027-03-31</td>
+                </tr>
+                <tr>
+                    <td>연구 과제명</td>
+                    <td>배터리/ESS/전기자동차 화재 확산과 피해 예측을 위한 인공지능 응용형 시뮬레이션 프로그램 개발</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <table>
+            <tbody>
+                <tr><td style="width: 20%;">회의 목적</td><td>자동생성성공하면안되겠니</td></tr>
+                <tr><td>일시</td><td>2025-03-21</td></tr>
+                <tr><td>장소</td><td>메테오시뮬레이션 본사</td></tr>
+                <tr><td>금액</td><td>100000.0</td></tr>
+            </tbody>
+        </table>
+
+        <table>
+            <caption><strong>* 참여인원</strong></caption>
+            <thead>
+                <tr>
+                    <th>소속</th>
+                    <th>직위</th>
+                    <th>성명</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+                <tr>
+                    <td>메테오시뮬레이션</td>
+                    <td>주임연구원</td>
+                    <td>강주원</td>
+                </tr>
+                
+                <tr>
+                    <td>메테오시뮬레이션</td>
+                    <td>주임연구원</td>
+                    <td>김자현</td>
+                </tr>
+                
+                <tr>
+                    <td>메테오시뮬레이션</td>
+                    <td>대표</td>
+                    <td>김지태</td>
+                </tr>
+                
+                <tr>
+                    <td>메테오시뮬레이션</td>
+                    <td>주임연구원</td>
+                    <td>황지인</td>
+                </tr>
+                
+                
+            </tbody>
+        </table>
+
+        <div class="footer">
+            <div class="footer-border"></div>
+            <div class="footer-content">
+                <h3>작성일: 2025-03-21</h3>
+                <h3>신청인) 소속: 메테오시뮬레이션 성명: 김자현 <span class="signature-container">(인 또는 서명) 
+                    
+                    <img src="static/signature/김자현.png" class="signature-image" alt="서명">
+                    
+                </span></h3>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

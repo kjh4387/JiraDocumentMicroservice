@@ -9,7 +9,6 @@ from app.source.infrastructure.repositories.company_repo_v2 import CompanyReposi
 from app.source.infrastructure.repositories.employee_repo_v2 import EmployeeRepositoryV2
 from app.source.infrastructure.repositories.research_repo_v2 import ResearchRepositoryV2
 from app.source.infrastructure.repositories.expert_repo_v2 import ExpertRepositoryV2
-from app.source.infrastructure.schema.validators import JsonSchemaValidator
 from app.source.infrastructure.rendering.document_renderer import JinjaDocumentRenderer
 from app.source.infrastructure.rendering.pdf_generator import WeasyPrintPdfGenerator
 from app.source.application.services.data_enricher import SelectiveFieldEnricher
@@ -108,16 +107,7 @@ class DIContainer:
             self.logger.debug("ExpertRepository created")
         return self._expert_repo
     
-    @property
-    def schema_validator(self) -> SchemaValidator:
-        """스키마 검증기"""
-        if not hasattr(self, '_schema_validator'):
-            self._schema_validator = JsonSchemaValidator(
-                self.config["schema_path"],
-                logger=self.logger
-            )
-        return self._schema_validator
-    
+  
     @property
     def document_renderer(self) -> DocumentRenderer:
         """문서 렌더러 인스턴스 반환"""
@@ -167,7 +157,7 @@ class DIContainer:
         """문서 서비스 인스턴스 반환"""
         if self._document_service is None:
             self._document_service = DocumentService(
-                self.schema_validator,
+                #self.schema_validator,
                 self.data_enricher,
                 self.document_renderer,
                 self.pdf_generator,

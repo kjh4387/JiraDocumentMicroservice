@@ -7,3 +7,5 @@ weasyprint
 python-dotenv
 Office365-REST-Python-Client
 psycopg2-binary
+pydantic
+pyyaml

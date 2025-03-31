@@ -40,7 +40,7 @@ services:
     depends_on:
       - db
     environment:
-      - DB_HOST=localhost
+      - DB_HOST=db
       - DB_PORT=5432
       - DB_NAME=mydb
       - DB_USER=myuser
@@ -52,5 +52,5 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./app:/app # 필요에 따라 코드 마운트
+      - ./app:/workspace/app
   

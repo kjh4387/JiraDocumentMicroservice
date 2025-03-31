@@ -15,14 +15,14 @@ class DocumentService:
     
     def __init__(
         self,
-        validator: SchemaValidator,
+        #validator: SchemaValidator,
         data_enricher: DataEnricher,
         renderer: DocumentRenderer,
         pdf_generator: PdfGenerator,
         preprocessor: Optional[JiraPreprocessor] = None,
         logger: Optional[logging.Logger] = None
     ):
-        self.validator = validator
+        #self.validator = validator
         self.data_enricher = data_enricher
         self.renderer = renderer
         self.pdf_generator = pdf_generator
