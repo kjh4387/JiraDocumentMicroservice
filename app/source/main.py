@@ -8,12 +8,24 @@ from app.source.config.settings import get_settings
 from app.source.config.di_container import DIContainer
 from app.source.core.exceptions import DocumentAutomationError, RenderingError
 from flask import Flask, request, jsonify, abort
+from flask_cors import CORS
 from pydantic import ValidationError
+import logging.handlers
+from datetime import datetime
 
 # Flask 앱 인스턴스 생성
 app = Flask(__name__, 
            static_folder="../resources",  # app/resources 디렉토리를 정적 파일로 제공
            template_folder="../source/templates")   # app/source/templates 디렉토리를 템플릿으로 제공
+
+# CORS 설정
+CORS(app, resources={
+    r"/api/*": {
+        "origins": "*",  # 모든 출처 허용
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["*"]  # 모든 헤더 허용
+    }
+})
 
 container: Optional[DIContainer] = None
 
@@ -42,16 +54,39 @@ def setup_logging(level: str = "INFO") -> logging.Logger:
     # 포맷터 설정
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     
-    # 스트림 핸들러 설정
+    # 스트림 핸들러 설정 (콘솔 출력)
     stream_handler = logging.StreamHandler(sys.stdout)
     stream_handler.setFormatter(formatter)
+    stream_handler.setLevel(numeric_level)
+    
+    
+    # 파일 핸들러 설정
+    log_dir = os.path.join("output", "logs")
+    os.makedirs(log_dir, exist_ok=True)
+    
+    # 로그 파일명에 날짜 추가
+    log_file = os.path.join(log_dir, f"app_{datetime.now().strftime('%Y%m%d')}.log")
+    
+    # 파일 핸들러 설정 (최대 10MB, 백업 5개)
+    file_handler = logging.handlers.RotatingFileHandler(
+        log_file,
+        maxBytes=10*1024*1024,  # 10MB
+        backupCount=5,
+        encoding='utf-8'
+    )
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(numeric_level)
+    
+    # 핸들러 추가
     root_logger.addHandler(stream_handler)
+    root_logger.addHandler(file_handler)
     
     # 다른 로거들의 레벨도 설정
     for name in logging.root.manager.loggerDict:
         logger = logging.getLogger(name)
         logger.setLevel(numeric_level)
-        
+    
+    root_logger.info(f"Logging initialized. Log file: {log_file}")
     return root_logger
 
 def load_config() -> Dict[str, Any]:
@@ -77,6 +112,43 @@ def load_config() -> Dict[str, Any]:
     }
     return config
 
+def process_jira_issue_with_data(container: DIContainer, issue_data: dict) -> Optional[Dict[str, Any]]:
+    """Jira 이슈 데이터 처리"""
+    logger = container.logger
+    try:
+        jira_data = issue_data
+        issue_key = jira_data["key"]
+        
+        mapped_jira_data = container.jira_client.map_issue(jira_data)
+        # Jira 데이터를 문서 데이터로 매핑
+        logger.info("Mapping Jira data to document data")
+        document_data = container.jira_document_mapper.preprocess_fields(mapped_jira_data)
+        
+        # 문서 생성
+        result = container.document_service.create_document(document_data)
+        
+        # PDF 저장
+        output_path = os.path.join(
+            container.config["output_dir"],
+            f"{issue_key}_{result['document_type']}.pdf"
+        )
+        saved_path = container.document_service.save_pdf(result["pdf"], output_path)
+        logger.info("Document saved to: %s", saved_path)
+        
+        # PDF 바이트 데이터를 제외한 응답 생성
+        response_data = {
+            "document_type": result["document_type"],
+            "saved_path": saved_path,
+            "issue_key": issue_key,
+            "status": "success"
+        }
+        
+        return response_data
+
+    except Exception as e:
+        logger.error(f"Error processing Jira issue {str(e)}")
+        return None
+
 def process_jira_issue(container: DIContainer, issue_key: str) -> Optional[Dict[str, Any]]:
     """Jira 이슈 처리 및 문서 생성
     
@@ -92,11 +164,11 @@ def process_jira_issue(container: DIContainer, issue_key: str) -> Optional[Dict[
         # Jira 이슈 데이터 가져오기
         logger.info("Fetching Jira issue: %s", issue_key)
         jira_data = container.jira_client.get_issue(issue_key)
-        
+        logger.debug(f"Jira issue data: {jira_data}")
         # 첨부 파일 다운로드
-        logger.info("Downloading attachments for issue: %s", issue_key)
-        downloaded_files = container.jira_client.download_attachments(issue_key)
-        logger.info("Downloaded %d attachments", len(downloaded_files))
+        #logger.info("Downloading attachments for issue: %s", issue_key)
+        #downloaded_files = container.jira_client.download_attachments(issue_key)
+        #logger.info("Downloaded %d attachments", len(downloaded_files))
         
         # Jira 데이터를 문서 데이터로 매핑
         logger.info("Mapping Jira data to document data")
@@ -105,28 +177,48 @@ def process_jira_issue(container: DIContainer, issue_key: str) -> Optional[Dict[
         # 문서 생성
         logger.info(f"Creating document for issue: {issue_key}")
         result = container.document_service.create_document(document_data)
+
         
-        # PDF 저장
-        output_path = os.path.join(
-            container.config["output_dir"],
-            f"{issue_key}_{result['document_type']}.pdf"
-        )
-        saved_path = container.document_service.save_pdf(result["pdf"], output_path)
-        logger.info("Document saved to: %s", saved_path)
+        process_save_document(jira_data, result)
+        
         
         return result
         
     except Exception as e:
-        logger.error("Error processing Jira issue %s: %s", issue_key, str(e), exc_info=True)
+        logger.error("Error processing Jira issue")
         return None
     
-def process_save_document(request_data: Dict[str, Any], container: DIContainer, result: Dict[str, Any]):
+
+    #TODO: 문서 저장 경로 추출, 문서 저장 처리(jira 이슈에 첨부, sharepoint 혹은 onedrive 에 저장)
+def process_save_document(request_data: Dict[str, Any],  result: Dict[str, Any]):
     """
     요청 데이터에서 문서 저장 경로를 추출하고, 문서를 저장합니다.
     """
+    logger = container.logger
+    # 1. request한 Jira issue에 문서 첨부
+
+
+    # 2. 문서 저장 경로 추출
+    # 3. 문서 저장
+    issue_key = request_data["key"]
+    
+    parent_issue_date = request_data["parent"]["fields"]["증빙_일자"]
+    parent_issue_key = request_data["parent"]["key"]
+    parent_issue_summary = request_data["parent"]["fields"]["summary"]
+    logger.info(f"Document type: {result['document_type']}")
+    output_path = os.path.join(
+        container.config["output_dir"],
+        f"{issue_key}_{result['document_type']}.pdf"
+    )
+    logger.info(f"Output path: {output_path}")
+    saved_path = container.document_service.save_pdf(result["pdf"], output_path)
+    logger.info("Document saved to: %s", saved_path)
     raise NotImplementedError("Not implemented")
 
-def initialize_app(config_path=None, log_level="INFO"):
+log_level = os.environ.get("LOG_LEVEL", "INFO")
+
+
+def initialize_app(config_path=None, log_level=log_level):
     """Flask 앱 초기화 함수"""
     global container
     
@@ -203,19 +295,19 @@ def create_document():
     """문서 생성 API"""
     try:
         request_data = request.get_json()
-        issue_key = request_data.get("issue_key")
-        
-        if not issue_key:
-            return jsonify({"error": "Missing issue_key parameter"}), 400
+        logger = container.logger
+        logger.debug("Request Headers: %s", dict(request.headers))
+        logger.debug("Request Content-Type: %s", request.content_type)
+        logger.debug("Request Body: %s", request.get_data(as_text=True))
             
-        result = process_jira_issue(get_container(), issue_key)
+        result = process_jira_issue_with_data(get_container(), request_data["issue"])
         
         if not result:
             return jsonify({"error": "Failed to process Jira issue"}), 500
             
         # 저장 처리
         if "save_path" in request_data:
-            process_save_document(request_data, get_container(), result)
+            process_save_document(request_data, result)
         
         return jsonify(result)
     
@@ -299,6 +391,8 @@ def check_files():
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
 
 # 앱 실행
 if __name__ == "__main__":

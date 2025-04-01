@@ -33,6 +33,23 @@ class JiraClient(JiraClient):
         os.makedirs(self.download_dir, exist_ok=True)
         
         self.logger.debug("JiraClient initialized with base URL: %s", jira_base_url)
+
+    def map_issue(self, issue_data: Dict[str, Any]) -> Dict[str, Any]:
+        """이슈 데이터 처리
+        
+        Args:
+            issue_data (Dict[str, Any]): 원본 이슈 데이터
+            
+        Returns:
+            Dict[str, Any]: 커스텀 필드 매핑 처리된 이슈 데이터
+        """
+        if self.field_mapper:
+            data = self.field_mapper.transform_response(issue_data)
+            
+            return data
+        else:
+            return issue_data
+
     
     def get_issue(self, issue_key: str) -> Dict[str, Any]:
         """이슈 정보 조회
@@ -62,6 +79,8 @@ class JiraClient(JiraClient):
             error_msg = f"Failed to fetch issue {issue_key}: {response.status_code} - {response.text}"
             self.logger.error(error_msg)
             raise Exception(error_msg)
+        
+    
     
     def download_attachments(self, issue_key: str, destination_dir: str = None) -> List[str]:
         """이슈 첨부 파일 다운로드

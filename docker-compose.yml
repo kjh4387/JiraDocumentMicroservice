@@ -49,6 +49,7 @@ services:
       - JIRA_USERNAME=juwon@msimul.com
       - JIRA_API_TOKEN=ATATT3xFfGF06CSBKdkFDyj5YLGYHirFjoglCVtvLCia7XxTR57nYY-wj1rxkTVsa3Gpgd7fZ4pqcKIPdR7g9RJR9lpmkDXZA1D1eWKb-EceAayOpapM-wBn3NCg6KifTFEJqo5DsYGdMOFYl0Kg9j1TF0B1EFwA-VRZcGB0UFd94Cp03lO7IzE=68E2873A
       - JIRA_DOWNLOAD_DIR=/tmp/jira_attachments
+      - LOG_LEVEL=DEBUG
     ports:
       - "8000:8000"
     volumes:

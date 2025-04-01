@@ -19,7 +19,8 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     pkg-config \
     libssl-dev \
-    ca-certificates\
+    ca-certificates \
+    curl \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # 소스 복사
