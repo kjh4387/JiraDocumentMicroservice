@@ -33,3 +33,5 @@ EXPOSE 8000
 
 # Flask 서버 실행
 CMD ["flask", "--app", "app.source.main:app", "run", "--host", "0.0.0.0", "--port", "8000"]
+
+ENV PYTHONPATH=/workspace
