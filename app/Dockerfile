@@ -32,4 +32,6 @@ RUN mkdir -p /workspace/app/output
 EXPOSE 8000
 
 # Flask 서버 실행
-CMD ["flask", "--app", "app.source.main:app", "run", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "flask --app app.source.main:app run --host 0.0.0.0 --port 8000 || tail -f /dev/null"]
+
+ENV PYTHONPATH=/workspace
