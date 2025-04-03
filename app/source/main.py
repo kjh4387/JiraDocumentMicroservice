@@ -128,11 +128,11 @@ def process_jira_issue_with_data(container: DIContainer, issue_data: dict) -> Op
         result = container.document_service.create_document(document_data)
         
         # PDF 저장
-        output_path = os.path.join(
-            container.config["output_dir"],
-            f"{issue_key}_{result['document_type']}.pdf"
-        )
-        saved_path = container.document_service.save_pdf(result["pdf"], output_path)
+        #output_path = os.path.join(
+        #    container.config["output_dir"],
+        #    f"{issue_key}_{result['document_type']}.pdf"
+        #)
+        #saved_path = container.document_service.save_pdf(result["pdf"], output_path)
         logger.info("Document saved to: %s", saved_path)
         
         # PDF 바이트 데이터를 제외한 응답 생성

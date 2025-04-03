@@ -48,7 +48,8 @@ class JiraClient(JiraClient):
             
             return data
         else:
-            return issue_data
+            self.logger.error("Field mapper is not set.")
+            raise Exception("Field mapper is not set")
 
     
     def get_issue(self, issue_key: str) -> Dict[str, Any]:
