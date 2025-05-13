@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>검수확인서</title>
+    <style>
+        /* 프린트 관련 설정 */
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        
+        @media print {
+            html, body {
+                width: 210mm;
+                height: 297mm;
+                margin: 0;
+                padding: 0;
+            }
+            .A4 {
+                margin: 0;
+                border: initial;
+                border-radius: initial;
+                width: initial;
+                min-height: initial;
+                box-shadow: initial;
+                background: initial;
+                page-break-after: always;
+            }
+        }
+
+        /* 문서 규격 */
+        .A4 {
+            display: flex;
+            flex-direction: column;
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 20mm;
+            box-sizing: border-box;
+            background: white;
+        }
+
+        /* 테이블 스타일 */
+        table {
+            width: 100%;
+            margin-top: 10mm;
+            border: 1mm solid black;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 0.5mm solid #cccccc;
+            padding: 10px;
+            text-align: center;
+            height: 30px;
+        }
+
+        /* 헤더 스타일 */
+        .head {
+            text-align: center;
+            padding-bottom: 10mm;
+            border-bottom: 2px solid black;
+        }
+
+        /* 입력 필드 스타일 */
+        .input-field {
+            display: inline-block;
+            min-width: 80%;
+            min-height: 20px;
+            border-bottom: 1px dashed #999;
+        }
+
+        /* 품목 리스트 스타일 */
+        .item-list td {
+            text-align: left;
+            padding-left: 15px;
+        }
+
+        /* 푸터 및 서명 영역 */
+        .footer {
+            margin-top: 15mm;
+            text-align: center;
+        }
+
+        .signature-area {
+            display: flex;
+            flex-direction: column;
+            gap: 15mm;
+            margin-top: 10mm;
+        }
+
+        .signature-box {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .signature-line {
+            display: inline-block;
+            width: 150px;
+            border-bottom: 1px solid #000;
+            margin-left: 10px;
+        }
+
+        /* 확인 문구 */
+        .confirmation-text {
+            font-size: 1.2em;
+            margin-bottom: 10mm;
+        }
+    </style>
+</head>
+<body>
+    <div class="A4">
+        <!-- 문서 제목 -->
+        <div class="head">
+            <div style="font-size: 2em;">검수확인서</div>
+        </div>
+
+        <!-- 품목 테이블 -->
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 8%;">NO</th>
+                    <th style="width: 25%;">품명</th>
+                    <th style="width: 20%;">규격</th>
+                    <th style="width: 10%;">수량</th>
+                    <th style="width: 20%;">기타(용도등)</th>
+                </tr>
+            </thead>
+            <tbody class="item-list">
+                <!-- 품목 1 -->
+                <tr>
+                    <td>1</td>
+                    <td><span class="input-field">품명1</span></td>
+                    <td><span class="input-field">규격1</span></td>
+                    <td><span class="input-field">1</span></td>
+                    <td><span class="input-field">기타1</span></td>
+                </tr>
+                
+                <!-- 품목 2 -->
+                <tr>
+                    <td>2</td>
+                    <td><span class="input-field"></span></td>
+                    <td><span class="input-field"></span></td>
+                    <td><span class="input-field"></span></td>
+                    <td><span class="input-field"></span></td>
+                </tr>
+                
+                <!-- 품목 3 -->
+                <tr>
+                    <td>3</td>
+                    <td><span class="input-field"></span></td>
+                    <td><span class="input-field"></span></td>
+                    <td><span class="input-field"></span></td>
+                    <td><span class="input-field"></span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- 확인 및 서명 영역 -->
+        <div class="footer">
+            <p class="confirmation-text">상기 물품을 영수 및 검수함</p>
+            
+            <div class="signature-area">
+                <div class="signature-row">
+                    <div style="text-align: left; width: 100%;">
+                        <p>
+                            일자: &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; 
+                            담당자: <span class="signature-line"></span> (인 또는 서명)
+                        </p>
+                    </div>
+                </div>
+                <!-- 담당자 서명 라인 --> 
+                <div class="signature-row">
+                    <div style="text-align: left; width: 100%;">
+                        <p>담당자: 
+                            성명: <span class="input-field" ></span>
+                            일자: <span class="input-field" ></span>
+                            <span class="signature-line"></span> (인 또는 서명)
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- 연구책임자 서명 라인 -->
+                <div class="signature-row">
+                    <div style="text-align: left; width: 100%;">
+                        <p>연구책임자: 
+                            성명: <span class="input-field" style="width: 100px;"></span>
+                            일자: <span class="input-field" style="width: 100px;"></span>
+                            <span class="signature-line"></span> (인 또는 서명)
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
