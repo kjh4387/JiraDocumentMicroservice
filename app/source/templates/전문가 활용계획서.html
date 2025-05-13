@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>전문가 활용계획서</title>
+    <style>
+        /* 프린트 관련 설정 */
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        
+        @media print {
+            html, body {
+                width: 210mm;
+                height: 297mm;
+                margin: 0;
+                padding: 0;
+            }
+            .A4 {
+                margin: 0;
+                border: initial;
+                border-radius: initial;
+                width: initial;
+                min-height: initial;
+                box-shadow: initial;
+                background: initial;
+                page-break-after: always;
+            }
+        } 
+        /* 문서 규격 */
+        .A4 {
+            display: flex;
+            flex-direction: column;
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 20mm;
+            box-sizing: border-box;
+            background: white;
+        }
+    
+        table {
+            width: 100%;
+            margin-top: 10mm;
+            border: 1mm solid black;
+            border-collapse: collapse;
+        }
+    
+        th, td {
+            border: 0.5mm solid #cccccc;
+            padding: 10px;
+            text-align: center;
+            height: 30px;
+        }
+    
+        .head {
+            text-align: center;
+            padding-bottom: 10mm;
+            border-bottom: 2px solid black;
+        }
+    
+        .footer {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: flex-end; /* 오른쪽 정렬 */
+            width: 100%;
+            padding: 5mm 0;
+            height: 30mm;
+            box-sizing: border-box;
+            margin-top: auto;
+        }
+    
+        .footer-border {
+            width: 100%;
+            border-top: 1px solid black;
+            margin-bottom: 5px;
+        }
+    
+        .footer-content {
+            text-align: right; /* 작성일 오른쪽 정렬 */
+        }
+    </style>
+</head>
+<body>
+    <div class="A4">
+        <div class="head">
+            <div style="font-size: 2em;">전문가 활용계획서</div>
+        </div>
+        <div class="content">
+            <table>
+                <tbody>
+                    <tr>
+                        <td class="content" style="width: 20%;">연구 기간</td>
+                        <td>{{ 연구 기간 }}</td>
+                    </tr>
+                    <tr>
+                        <td class="content">연구 과제명</td>
+                        <td>{{ 연구 과제명 }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="table">
+            <table>
+                <tbody>
+                    <tr>
+                        <td style="text-align: left; width: 20%;">1. 내용</td>
+                        <td colspan="3">{{ 메모 }}</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align: left;">2. 일시</td>
+                        <td colspan="3">{{ 증빙 일자 }}</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align: left;">3. 장소</td>
+                        <td colspan="3">{{ 장소 }}</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align: left;">4. 대상</td>
+                        <td colspan="3">{{ 대상 }}</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align: left;">5. 소요비용 (예상)</td>
+                        <td colspan="3">{{ 사용금액 }}</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align: left;">6. 전문가 인적사항</td>
+                        <td style="text-align: left;">소속: {{ 소속 }}</td>
+                        <td style="text-align: left;">직위: {{ 직위 }}</td>
+                        <td style="text-align: left;">성명: {{ 성명 }}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div style="color: blue; padding-top: 10px;">
+                <h3>붙임 1. 전문가 이력사항(경력증명서 포함(해당시)) 1부.</h3>
+            </div>
+        </div>
+        <div class="footer">
+            <div class="footer-border" style="text-align: center;">
+                <h2>위와 같이 전문가를 활용하고자 합니다.</h2>
+            </div>
+            <div class="footer-content">
+                <h3>작성일: {{ issued_date }}</h3>
+                <h3>신청인) 소속: {{ assignee.department }} 성명: {{ assignee.name }} (인 또는 서명)</h3>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>전문가 자문확인서</title>
+    <style>
+        /* 프린트 관련 설정 */
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        @media print {
+            html, body {
+                width: 210mm;
+                height: 297mm;
+                margin: 0;
+                padding: 0;
+            }
+            .A4 {
+                margin: 0;
+                border: initial;
+                border-radius: initial;
+                width: initial;
+                min-height: initial;
+                box-shadow: initial;
+                background: initial;
+                page-break-after: always;
+            }
+        }
+
+        /* 문서 규격 */
+        .A4 {
+            display: flex;
+            flex-direction: column;
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 20mm;
+            box-sizing: border-box;
+            background: white;
+        }
+
+        /* 타이틀 스타일 */
+        .title {
+            text-align: center;
+            padding-bottom: 10mm;
+            border-bottom: 2px solid black;
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        /* 테이블 스타일 */
+        table {
+            width: 100%;
+            margin-top: 10mm;
+            border: 1mm solid black;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 0.5mm solid #cccccc;
+            padding: 10px;
+            height: 30px;
+            text-align: left;
+        }
+
+        /* 전문가 정보 스타일 */
+        .expert-info td {
+            text-align: left;
+            padding-left: 10px;
+        }
+
+        .expert-info span {
+            display: inline-block;
+            width: 70%;
+            text-align: center;
+        }
+
+        /* 활용내역 칸 높이 조정 */
+        .details-cell {
+            height: 100mm;
+            vertical-align: top;
+            padding: 10px;
+        }
+
+        /* 푸터 스타일 */
+        .footer {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: flex-end;
+            width: 100%;
+            padding: 5mm 0;
+            height: 30mm;
+            box-sizing: border-box;
+            margin-top: auto;
+        }
+
+        .footer-border {
+            width: 100%;
+            border-top: 1px solid black;
+            margin-bottom: 5mm;
+        }
+
+        .footer-content {
+            text-align: right;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="A4">
+        <div class="title">전문가 자문확인서</div>
+
+        <div class="table">
+            <table>
+                <tbody>
+                    <tr>
+                        <td style="width: 20%;">전문가 활용 구분</td>
+                        <td colspan="3">{{ 전문가 활용구분 }}</td>
+                    </tr>
+                    <tr>
+                        <td rowspan="4">전문가 정보</td>
+                        <td colspan="3" class="expert-info">
+                            (성명) <span>{{ 성명 }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="expert-info">
+                            (생년월일) <span>{{ 생년월일 }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="expert-info">
+                            (소속 및 직위) <span>{{ 소속 }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="expert-info">
+                            (주소) <span>{{ 주소 }}</span>
+                        </td>
+                    </tr>                    
+                    <tr>
+                        <td>활용일시</td>
+                        <td colspan="3">{{ 증빙 일자 }}</td>
+                    </tr>
+                    <tr>
+                        <td>지급액</td>
+                        <td colspan="3">{{ 사용금액 }}</td>
+                    </tr>
+                    <tr>
+                        <td>은행명</td>
+                        <td style="width: 30%;">{{ 은행 }}</td>
+                        <td style="width: 20%;">계좌번호</td>
+                        <td>{{ 계좌번호 }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="4" style="text-align: center; font-weight: bold;">전문가 활용내역</td>
+                    </tr>
+                    <tr>
+                        <td colspan="4" class="details-cell">{{ 메모 }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 서명 및 푸터 -->
+        <div class="footer">
+            <div class="footer-border"></div>
+            <div class="footer-content">
+                <p>위 사실을 확인합니다.</p>
+                <p>작성일: {{ confirmation_date }}</p>
+                <p>확인자) 소속: {{ confirmation_department }} 성명: {{ confirmation_name }} (인 또는 서명)</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
