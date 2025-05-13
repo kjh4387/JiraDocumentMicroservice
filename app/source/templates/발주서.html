@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>검수확인서</title>
+    <title>발주서</title>
     <style>
         /* 프린트 관련 설정 */
         @page {
@@ -115,87 +115,67 @@
     <div class="A4">
         <!-- 문서 제목 -->
         <div class="head">
-            <div style="font-size: 2em;">검수확인서</div>
+            <div style="font-size: 2em;">발주서</div>
         </div>
 
         <!-- 품목 테이블 -->
         <table>
-            <thead>
-                <tr>
-                    <th style="width: 8%;">NO</th>
-                    <th style="width: 25%;">품명</th>
-                    <th style="width: 20%;">규격</th>
-                    <th style="width: 10%;">수량</th>
-                    <th style="width: 20%;">기타(용도등)</th>
-                </tr>
-            </thead>
             <tbody class="item-list">
-                <!-- 품목 1 -->
                 <tr>
-                    <td>1</td>
-                    <td><span class="input-field"></span></td>
-                    <td><span class="input-field"></span></td>
-                    <td><span class="input-field"></span></td>
-                    <td><span class="input-field"></span></td>
+                    <th style="width: 48%;" colspan="2">수주처</th>
+                    <th style="width: 4%;" rowspan="5"></th>
+                    <th style="width: 48%;" colspan="2">발주처</th>
                 </tr>
-                
-                <!-- 품목 2 -->
                 <tr>
-                    <td>2</td>
-                    <td><span class="input-field"></span></td>
-                    <td><span class="input-field"></span></td>
-                    <td><span class="input-field"></span></td>
-                    <td><span class="input-field"></span></td>
+                    <td style="width: 15%;">상호</td>
+                    <td style="width: 33%;"></td>
+                    <td style="width: 15%;">상호</td>
+                    <td style="width: 33%;"></td>
                 </tr>
-                
-                <!-- 품목 3 -->
                 <tr>
-                    <td>3</td>
-                    <td><span class="input-field"></span></td>
-                    <td><span class="input-field"></span></td>
-                    <td><span class="input-field"></span></td>
-                    <td><span class="input-field"></span></td>
+                    <td>담당자</td>
+                    <td></td>
+                    <td>담당자</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>전화</td>
+                    <td></td>
+                    <td>전화</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>팩스</td>
+                    <td></td>
+                    <td>팩스</td>
+                    <td></td>
+                </tr>
+                <tr rowspan="3">
+                    <td colspan="5"> 
+                        납기일자: {{ 증빙 일자 }} <br/> 
+                        납품장소: {{ 장소 }} <br/>
+                        합계금액: {{ 합계금액 }} <br/>
+                    </td>
                 </tr>
             </tbody>
         </table>
-
-        <!-- 확인 및 서명 영역 -->
-        <div class="footer">
-            <p class="confirmation-text">상기 물품을 영수 및 검수함</p>
-            
-            <div class="signature-area">
-                
-                <!-- 담당자 서명 라인 
-                <div class="signature-row">
-                    <div style="text-align: left; width: 100%;">
-                        <p>
-                            일자: 2025년 05월 13일 &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; 
-                            담당자: {{ 담당자 }} (인 또는 서명)
-                        </p>
-                    </div>
-                </div> -->
-
-                <!-- 담당자 서명 라인 --> 
-                <div class="signature-row">
-                    <div style="text-align: left; width: 100%;">
-                        <p>
-                            일자: {{ 증빙 일자 }} &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; 
-                            담당자: {{ 담당자 }} (인 또는 서명)
-                        </p>
-                    </div>
-                </div>
-                
-                <!-- 연구책임자 서명 라인 -->
-                <div class="signature-row">
-                    <div style="text-align: left; width: 100%;">
-                        <p>
-                            일자: {{ 증빙 일자 }} &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; 
-                            연구책임자: 김지태 (인 또는 서명)
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 5%;">NO</th>
+                    <th style="width: 20%;">품 명</th>
+                    <th style="width: 8%;">규격</th>
+                    <th style="width: 8%;">수량</th>
+                    <th style="width: 10%;">단가</th>
+                    <th style="width: 15%;">공급가액</th>
+                    <th style="width: 10%;">세액</th>
+                    <th style="width: 15%;">금액</th>
+                    <th style="width: 10%;">비고</th>
+                </tr>
+            </thead>
+            <tbody class="item-list">
+            </tbody>
+        </table>
     </div>
 </body>
 </html>
