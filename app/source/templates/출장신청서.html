@@ -103,7 +103,7 @@
                     </tr>
                     <tr>
                         <td class="content">연구 과제명</td>
-                        <td>{{ 연구과제_선택 }}</td>
+                        <td>{{ 연구과제_선택_key.project_period }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -120,16 +120,16 @@
                 <tbody>
                     <tr>
                         <th style="width: 10%;">성명</th>
-                        <th style="width: 30%;">출장목적</th>
-                        <th style="width: 10%;">출장기간</th>
-                        <th style="width: 10%;">출장장소</th>
+                        <th style="width: 30%;">출장 목적</th>
+                        <th style="width: 10%;">출장 기간</th>
+                        <th style="width: 10%;">출장 장소</th>
                         <th style="width: 10%;">서명</th>
                     </tr>
                     {% for participant in 내부_인원 %}
                     <tr>
                         <td>{{ participant.name }}</td>
-                        <td>{{ participant.position }}</td>
-                        <td>{{ participant.name }}</td>
+                        <td>{{ participant.gaol }}</td>
+                        <td>{{ participant.date }}</td>
                         <td>{{ participant.position }}</td>
                         <td>{{ participant.sign }}</td>
                     </tr>
@@ -140,8 +140,8 @@
             <div class="footer">
                 <div class="footer-border"></div>
                 <div class="footer-content">
-                    <h3>작성일: {{ 증빙_일자 }}</h3>
-                    <h3>신청인) 소속: &ensp; 메테오 시뮬레이션 &ensp; 성명: {{ assignee.name }} <span class="signature-container">(인 또는 서명) 
+                    <h3>작성일: {{ 작성_일자 }}</h3>
+                    <h3>신청인) 소속: &ensp; 메테오 시뮬레이션 &ensp; 성명:  &ensp; {{ assignee.name }} <span class="signature-container">(인 또는 서명) 
                     </span></h3>
                 </div>
             </div>

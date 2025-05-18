@@ -122,9 +122,9 @@
         <table>
             <tbody>
                 <tr><td style="width: 20%;">회의 목적</td><td>{{ 회의_목적 }}</td></tr>
-                <tr><td>일시</td><td>{{ 회의일자 }}</td></tr>
-                <tr><td>장소</td><td>{{ 회의_장소 }}</td></tr>
-                <tr><td>금액</td><td>{{ 사용금액 }}</td></tr>
+                <tr><td>회의 일자</td><td>{{ 회의_일자 }}</td></tr>
+                <tr><td>회의 장소</td><td>{{ 회의_장소 }}</td></tr>
+                <tr><td>결제 금액</td><td>{{ 결제_금액 }}</td></tr>
             </tbody>
         </table>
 
@@ -159,7 +159,7 @@
             <div class="footer-border"></div>
             <div class="footer-content">
                 <h3>작성일: {{ 회의일자 }}</h3>
-                <h3>신청인) 소속: &ensp; 메테오 시뮬레이션 &ensp; 성명: {{ assignee.name }} <span class="signature-container">(인 또는 서명) 
+                <h3>신청인) 소속: &ensp; 메테오 시뮬레이션 &ensp; 성명:&ensp;  황지인 <span class="signature-container">(인 또는 서명) 
                     {% if assignee and assignee.name %}
                     <img src="{{ assignee.signature }}" class="signature-image" alt="서명">
                     {% endif %}
