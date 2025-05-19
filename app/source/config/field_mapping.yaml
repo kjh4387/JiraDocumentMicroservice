@@ -121,7 +121,7 @@ field_patterns:
       - name: position
       - name: email
 
-  회의_참석자_내부_인원:
+  내부_인원:
     type: employee
     is_list: true
     id_field: accountId
