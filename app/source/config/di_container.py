@@ -18,6 +18,7 @@ from app.source.infrastructure.integrations.jira_client import JiraClient
 from app.source.infrastructure.mapping.jira_field_mapper import ApiJiraFieldMappingProvider, FileJiraFieldMappingProvider, JiraFieldMapperimpl
 from app.source.infrastructure.mapping.jira_document_mapper import JiraDocumentMapper
 from app.source.application.services.preprocessor import JiraPreprocessor
+from app.source.application.services.document_strategies.document_strategy_factory import DocumentStrategyFactory
 import logging
 import os
 
@@ -52,6 +53,9 @@ class DIContainer:
         self._data_enricher = None
         self._document_service = None
         self._signature_service = None
+
+        # Strategy
+        self._document_strategy_factory = None
 
         # Jira
         self._jira_client = None
@@ -161,10 +165,25 @@ class DIContainer:
                 self.data_enricher,
                 self.document_renderer,
                 self.pdf_generator,
+                self.document_strategy_factory,
                 logger=self.logger
             )
             self.logger.debug("DocumentService created")
         return self._document_service
+    
+    @property
+    def document_strategy_factory(self) -> DocumentStrategyFactory:
+        """문서 전략 팩토리 인스턴스 반환"""
+        if self._document_strategy_factory is None:
+            self._document_strategy_factory = DocumentStrategyFactory(
+                self.data_enricher,
+                self.document_renderer,
+                self.pdf_generator,
+                self.jira_client,
+                self.logger
+            )
+            self.logger.debug("DocumentStrategyFactory created")
+        return self._document_strategy_factory
 
     @property
     def jira_client(self) -> JiraClient:
@@ -272,15 +291,7 @@ class DIContainer:
         self.register('document_service', service)
         return service
 
-    def create_schema_validator(self):
-        """스키마 검증기 생성 및 등록"""
-        # 단순 인스턴스 생성
-        validator = JsonSchemaValidator(logger=self.logger)
-        
-        # 등록
-        self.register('schema_validator', validator)
-        return validator
-
+  
     def create_document_renderer(self):
         """문서 렌더러 생성 및 등록"""
         # 템플릿 디렉토리 설정

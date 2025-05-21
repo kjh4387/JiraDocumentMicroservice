@@ -115,39 +115,43 @@ def load_config() -> Dict[str, Any]:
 def process_jira_issue_with_data(container: DIContainer, issue_data: dict) -> Optional[Dict[str, Any]]:
     """Jira 이슈 데이터 처리"""
     logger = container.logger
-    try:
-        jira_data = issue_data
-        issue_key = jira_data["key"]
-        
-        mapped_jira_data = container.jira_client.map_issue(jira_data)
-        # Jira 데이터를 문서 데이터로 매핑
-        logger.info("Mapping Jira data to document data")
-        document_data = container.jira_document_mapper.preprocess_fields(mapped_jira_data)
-        
-        # 문서 생성
-        result = container.document_service.create_document(document_data)
-        
-        # PDF 저장
-        output_path = os.path.join(
-            container.config["output_dir"],
-            f"{issue_key}_{result['document_type']}.pdf"
-        )
-        saved_path = container.document_service.save_pdf(result["pdf"], output_path)
-        logger.info("Document saved to: %s", saved_path)
-        
-        # PDF 바이트 데이터를 제외한 응답 생성
-        response_data = {
-            "document_type": result["document_type"],
-            "saved_path": saved_path,
-            "issue_key": issue_key,
-            "status": "success"
-        }
-        
-        return response_data
+    jira_data = issue_data
+    issue_key = jira_data["key"]
+    # Jira의 custom field 부분을 필드명으로 매핑
+    mapped_jira_data = container.jira_client.map_issue(jira_data)
+    
+    logger.info("Mapping Jira data to document data")
+    # Jira 데이터 preprocess
+    document_data = container.jira_document_mapper.preprocess_fields(mapped_jira_data)
 
-    except Exception as e:
-        logger.error(f"Error processing Jira issue {str(e)}")
-        return None
+    document_type = container.document_service.get_document_type(document_data)
+    document_data["document_type"] = document_type
+    logger.info(f"Document type: {document_type}")
+
+    # 문서 생성
+    result = container.document_service.create_document(document_data, document_type)
+    
+    # PDF 저장
+    output_path = os.path.join(
+        container.config["output_dir"],
+        f"{issue_key}_{result['document_type']}.pdf"
+    )
+    saved_path = container.document_service.save_pdf(result["pdf"], output_path)
+    logger.info("Document saved to: %s", saved_path)
+    
+    # PDF 바이트 데이터를 제외한 응답 생성
+    response_data = {
+        "document_type": result["document_type"],
+        "saved_path": saved_path,
+        "issue_key": issue_key,
+        "status": "success"
+    }
+    
+    return response_data
+
+    #except Exception as e:
+    #    logger.error(f"Error processing Jira issue {str(e)}")
+    #    return None
 
 def process_jira_issue(container: DIContainer, issue_key: str) -> Optional[Dict[str, Any]]:
     """Jira 이슈 처리 및 문서 생성
@@ -160,20 +164,19 @@ def process_jira_issue(container: DIContainer, issue_key: str) -> Optional[Dict[
         생성된 문서 정보 또는 None
     """
     logger = container.logger
-    try:
-        # Jira 이슈 데이터 가져오기
-        logger.info("Fetching Jira issue: %s", issue_key)
-        jira_data = container.jira_client.get_issue(issue_key)
-        logger.debug(f"Jira issue data: {jira_data}")
-        result = process_jira_issue_with_data(container, jira_data)
-        return result
+    # Jira 이슈 데이터 가져오기
+    logger.info("Fetching Jira issue: %s", issue_key)
+    jira_data = container.jira_client.get_issue(issue_key)
+    logger.debug(f"Jira issue data: {jira_data}")
+    result = process_jira_issue_with_data(container, jira_data)
+    return result
         
-    except Exception as e:
-        logger.error("Error processing Jira issue")
-        return None
+    #except Exception as e:
+    #    logger.error("Error processing Jira issue")
+    #    return None
     
 
-    #TODO: 문서 저장 경로 추출, 문서 저장 처리(jira 이슈에 첨부, sharepoint 혹은 onedrive 에 저장)
+#TODO: 문서 저장 경로 추출, 문서 저장 처리(jira 이슈에 첨부, sharepoint 혹은 onedrive 에 저장)
 def process_save_document(request_data: Dict[str, Any],  result: Dict[str, Any]):
     """
     요청 데이터에서 문서 저장 경로를 추출하고, 문서를 저장합니다.

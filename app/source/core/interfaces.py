@@ -169,3 +169,18 @@ class Logger(ABC):
     def critical(self, message: str, **kwargs):
         """심각한 오류 로그"""
         pass
+
+class DocumentGenerationStrategy(ABC):
+    """문서 생성 전략 인터페이스"""
+    
+    @abstractmethod
+    def generate_document(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """문서 생성
+        
+        Args:
+            data: 문서 데이터
+            
+        Returns:
+            생성된 문서 정보
+        """
+        pass
