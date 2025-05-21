@@ -215,6 +215,52 @@ class JiraClient(JiraClient):
             raise
 
 
+    def upload_attachment(self, issue_key: str, file_path: str) -> Dict[str, Any]:
+        """이슈에 첨부 파일 업로드
+        
+        Args:
+            issue_key (str): 이슈 키 (예: "PROJ-123")
+            file_path (str): 업로드할 파일 경로
+            
+        Returns:
+            Dict[str, Any]: 업로드 결과 응답 데이터
+            
+        Raises:
+            Exception: 업로드 실패 시
+        """
+        upload_url = f"{self.jira_base_url}/rest/api/2/issue/{issue_key}/attachments"
+        headers = {
+            **self.headers,
+            "X-Atlassian-Token": "no-check"  # Jira 첨부 파일 업로드 시 필요
+        }
+        
+        try:
+            with open(file_path, 'rb') as file:
+                files = {'file': (os.path.basename(file_path), file)}
+                response = requests.post(
+                    upload_url,
+                    headers=headers,
+                    auth=self.auth,
+                    files=files
+                )
+            
+            if response.status_code == 200:
+                self.logger.info(f"Successfully uploaded {file_path} to {issue_key}")
+                return response.json()
+            else:
+                error_msg = f"Failed to upload attachment: {response.status_code} - {response.text}"
+                self.logger.error(error_msg)
+                raise Exception(error_msg)
+                
+        except FileNotFoundError:
+            error_msg = f"File not found: {file_path}"
+            self.logger.error(error_msg)
+            raise FileNotFoundError(error_msg)
+        except Exception as e:
+            self.logger.error(f"Error during file upload: {str(e)}")
+            raise
+
+
 # 사용 예시
 if __name__ == "__main__":
     # 환경 변수나 설정 파일에서 가져오는 것이 더 안전함
