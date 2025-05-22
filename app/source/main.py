@@ -9,9 +9,15 @@ from app.source.config.di_container import DIContainer
 from app.source.core.exceptions import DocumentAutomationError, RenderingError
 from flask import Flask, request, jsonify, abort
 from flask_cors import CORS
-from pydantic import ValidationError
 import logging.handlers
 from datetime import datetime
+import shutil
+from enum import Enum
+
+class DocumentStrategyType(Enum):
+    GENERATION = "generation"  # 문서 생성
+    DOWNLOAD = "download"     # 문서 다운로드
+
 
 # Flask 앱 인스턴스 생성
 app = Flask(__name__, 
@@ -95,6 +101,8 @@ def load_config() -> Dict[str, Any]:
         "schema_path": os.path.join("app", "source", "schemas", "IntegratedDocumentSchema.json"),
         "template_dir": os.path.join("app", "source", "templates"),
         "output_dir": os.path.join("output"),
+        "dir_name_format": "{research_project}/{parent_issue_subject}/{date}_{parent_issue_key}_{parent_issue_summary}",
+        "file_name_format": "{summary}",
         "database": {
             "host": os.environ.get("DB_HOST", "db"),
             "port": int(os.environ.get("DB_PORT", 5432)),
@@ -128,21 +136,23 @@ def process_jira_issue_with_data(container: DIContainer, issue_data: dict) -> Op
     document_data["document_type"] = document_type
     logger.info(f"Document type: {document_type}")
 
+
     # 문서 생성
     result = container.document_service.create_document(document_data, document_type)
     
-    # PDF 저장
-    output_path = os.path.join(
-        container.config["output_dir"],
-        f"{issue_key}_{result['document_type']}.pdf"
-    )
-    saved_path = container.document_service.save_pdf(result["pdf"], output_path)
-    logger.info("Document saved to: %s", saved_path)
+    # 디버깅을 위한 파일 저장
+    if logger.isEnabledFor(logging.DEBUG):
+        output_path = os.path.join(
+            container.config["output_dir"],
+            f"{issue_key}_{result['document_type']}.pdf"
+        )
+        shutil.copy(result["full_path"], output_path)
+        logger.info("Document saved to: %s", output_path)
     
+    process_save_document(document_data, result)
     # PDF 바이트 데이터를 제외한 응답 생성
     response_data = {
         "document_type": result["document_type"],
-        "saved_path": saved_path,
         "issue_key": issue_key,
         "status": "success"
     }
@@ -152,6 +162,49 @@ def process_jira_issue_with_data(container: DIContainer, issue_data: dict) -> Op
     #except Exception as e:
     #    logger.error(f"Error processing Jira issue {str(e)}")
     #    return None
+
+def sanitize_folder_name(name: str) -> str:
+    """폴더명으로 사용할 수 없는 특수문자를 제거하거나 대체합니다.
+    
+    Args:
+        name: 원본 폴더명
+        
+    Returns:
+        str: 안전한 폴더명
+    """
+    # 윈도우/리눅스/맥에서 사용할 수 없는 문자들
+    invalid_chars = r'[<>:"/\\|?*\x00-\x1f]'
+    for char in invalid_chars:
+        name = name.replace(char, '_')
+    # 연속된 언더스코어를 하나로 통합
+    name = '_'.join(filter(None, name.split('_')))
+    # 마지막에 있는 점(.) 제거
+    name = name.rstrip('.')
+    return name
+
+def _get_document_path(issue_data: dict) -> str:
+    """문서 저장 경로 결정"""
+    # config의 dir_name_format을 사용하여 디렉토리 경로 생성
+    dir_path = container.config["dir_name_format"].format(
+        research_project=f"({issue_data["fields"]["연구과제_선택_key"]["project_code"]}){sanitize_folder_name(issue_data["fields"]["연구과제_선택_key"]["project_name"])}",
+        parent_issue_subject=issue_data["fields"]["parent"]['fields']['issuetype']['name'],
+        date=issue_data['fields']['증빙_일자'],
+        parent_issue_key=issue_data["fields"]["parent"]['key'],
+        parent_issue_summary=issue_data["fields"]["parent"]['fields']['summary']
+    )
+    logger = container.logger
+    logger.debug(f"dir_path: {dir_path}")
+    return os.path.join(container.config["output_dir"], dir_path)
+
+def _get_document_name(issue_data: dict, extension: str = "pdf") -> str:
+    """문서 이름 결정"""
+
+    name = container.config["file_name_format"].format(
+        summary=issue_data["fields"]["summary"]
+    )
+    logger = container.logger
+    logger.debug(f"name: {name}")
+    return f"{name}.{extension}"
 
 def process_jira_issue(container: DIContainer, issue_key: str) -> Optional[Dict[str, Any]]:
     """Jira 이슈 처리 및 문서 생성
@@ -177,33 +230,37 @@ def process_jira_issue(container: DIContainer, issue_key: str) -> Optional[Dict[
     
 
 #TODO: 문서 저장 경로 추출, 문서 저장 처리(jira 이슈에 첨부, sharepoint 혹은 onedrive 에 저장)
-def process_save_document(request_data: Dict[str, Any],  result: Dict[str, Any]):
+def process_save_document(request_data: Dict[str, Any], result: Dict[str, Any]):
     """
     요청 데이터에서 문서 저장 경로를 추출하고, 문서를 저장합니다.
     """
     logger = container.logger
-    # 1. request한 Jira issue에 문서 첨부
-
-
-    # 2. 문서 저장 경로 추출
-    # 3. 문서 저장
-    issue_key = request_data["key"]
+    strategy_type = result.get("strategy_type", DocumentStrategyType.GENERATION.value)
+    logger.debug(f"result: {result}")
+    import shutil
+    if strategy_type == DocumentStrategyType.GENERATION.value:
+        # Jira에 업로드
+        container.jira_client.upload_attachment(request_data["key"], result["full_path"])
+        # 생성된 PDF 파일 저장
+        path = os.path.join(_get_document_path(request_data),  _get_document_name(request_data))
+        logger.debug(f"path: {path}")
+        # destination directory 생성
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        shutil.copy(result["full_path"], path)
     
-    parent_issue_date = request_data["parent"]["fields"]["증빙_일자"]
-    parent_issue_key = request_data["parent"]["key"]
-    parent_issue_summary = request_data["parent"]["fields"]["summary"]
-    logger.info(f"Document type: {result['document_type']}")
-    output_path = os.path.join(
-        container.config["output_dir"],
-        f"{issue_key}_{result['document_type']}.pdf"
-    )
-    logger.info(f"Output path: {output_path}")
-    saved_path = container.document_service.save_pdf(result["pdf"], output_path)
-    logger.info("Document saved to: %s", saved_path)
-    raise NotImplementedError("Not implemented")
+    elif strategy_type == DocumentStrategyType.DOWNLOAD.value:
+        # 다운로드된 파일은 이미 Jira에 있으므로 업로드 불필요
+        path = os.path.join(_get_document_path(request_data),  _get_document_name(request_data, result["extension"]))
+        # destination directory 생성
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        logger.debug(f"result['file_path']: {result['file_path']}, path: {path}")
+        shutil.copy2(result["full_path"], path)
+    
+    logger.info("Document saved to: %s", path)
+
+
 
 log_level = os.environ.get("LOG_LEVEL", "INFO")
-
 
 def initialize_app(config_path=None, log_level=log_level):
     """Flask 앱 초기화 함수"""
@@ -292,9 +349,6 @@ def create_document():
         if not result:
             return jsonify({"error": "Failed to process Jira issue"}), 500
             
-        # 저장 처리
-        if "save_path" in request_data:
-            process_save_document(request_data, result)
         
         return jsonify(result)
     
@@ -389,3 +443,4 @@ if __name__ == "__main__":
     else:
         # 웹 서버 실행
         app.run(debug=True, host="0.0.0.0", port=8000)
+

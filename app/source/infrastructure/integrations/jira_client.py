@@ -83,28 +83,23 @@ class JiraClient(JiraClient):
         
     
     
-    def download_attachments(self, issue_key: str, destination_dir: str = None) -> List[str]:
+    def download_attachments(self, issue_key: str, ) -> List[str]:
         """이슈 첨부 파일 다운로드
         
         Args:
             issue_key (str): 이슈 키 (예: "PROJ-123")
-            destination_dir (str, optional): 다운로드 경로 (지정하지 않으면 기본 경로 사용)
             
         Returns:
             List[str]: 다운로드된 파일 경로 목록
         """
         issue_data = self.get_issue(issue_key)
-        issue_summary = issue_data["fields"]["summary"]
         attachments = issue_data["fields"]["attachment"]
         
         if not attachments:
             self.logger.info(f"No attachments found for issue {issue_key}.")
             return []
-        
-        # 저장 디렉토리 결정
-        folder_name = self._clean_folder_name(f"{issue_key} - {issue_summary}")
-        save_dir = destination_dir or os.path.join(self.download_dir, folder_name)
-        os.makedirs(save_dir, exist_ok=True)
+        import tempfile
+        save_dir = os.path.join(tempfile.mkdtemp())
         
         # 첨부 파일 다운로드
         downloaded_files = []
@@ -277,15 +272,15 @@ if __name__ == "__main__":
     issue_key = "ACCO-" + input("Enter the issue key (e.g., ACCO-16): ").strip()
     
     # 이슈 정보 가져오기
-    issue_data = client.get_issue(issue_key)
-    fields = issue_data["fields"]
-    for field in fields:
-        print(f"{field}: {fields[field]}")
+    #issue_data = client.get_issue(issue_key)
+    #fields = issue_data["fields"]
+    #for field in fields:
+    #    print(f"{field}: {fields[field]}")
     
     # 첨부 파일 다운로드
-    # downloaded_files = client.download_attachments(issue_key)
-    # print(f"Downloaded {len(downloaded_files)} files")
+    downloaded_files = client.download_attachments(issue_key)
+    print(f"Downloaded {len(downloaded_files)} files")
 
     # 첨부 파일 업로드
-    uploaded_files = client.upload_attachment(issue_key, "output/ACCO-74_회의비사용신청서.pdf")
-    print(f"Uploaded {len(uploaded_files)} files")
+    #uploaded_files = client.upload_attachment(issue_key, "output/ACCO-74_회의비사용신청서.pdf")
+    #print(f"Uploaded {len(uploaded_files)} files")

@@ -55,7 +55,7 @@ class DocumentService:
             self.logger.error("Failed to get document_type: %s", str(e), exc_info=True)
             raise DocumentAutomationError(f"문서 타입 추출 중 오류 발생: {str(e)}")
     
-    def create_document(self, data: Dict[str, Any], document_type: str) -> Dict[str, Any]:
+    def create_document(self, data: Dict[str, Any], document_type: str, path = None, file_name = None) -> Dict[str, Any]:
         """문서 생성
         
         Args:
@@ -64,32 +64,37 @@ class DocumentService:
         Returns:
             생성된 문서 정보
         """
-        try:
-            # 데이터 전처리
-            if self.preprocessor:
-                try:
-                    self.logger.debug("Preprocessing data")
-                    data = self.preprocessor.preprocess(data)
-                    self.logger.debug("Data preprocessed successfully")
-                except Exception as e:
-                    self.logger.error("Data preprocessing failed: %s", str(e))
-            else:
-                self.logger.debug("Preprocessor is not set, skipping preprocessing")
-                raise DocumentAutomationError("Preprocessor is not set")
+        # 데이터 전처리
+        if self.preprocessor:
+            try:
+                self.logger.debug("Preprocessing data")
+                data = self.preprocessor.preprocess(data)
+                self.logger.debug("Data preprocessed successfully")
+            except Exception as e:
+                self.logger.error("Data preprocessing failed: %s", str(e))
+        else:
+            self.logger.debug("Preprocessor is not set, skipping preprocessing")
+            raise DocumentAutomationError("Preprocessor is not set")
+        
+        # data enrich
+        if self.data_enricher:
+            try:
+                self.logger.debug("Enriching data")
+                data = self.data_enricher.enrich("",data)
+                self.logger.debug("Data enriched successfully")
+            except Exception as e:
+                self.logger.error("Data enrichment failed: %s", str(e))
+        
+        # 문서 타입에 맞는 전략 선택
+        strategy = self.strategy_factory.get_strategy(document_type)
+        
+        # 선택된 전략으로 문서 생성
+        result = strategy.generate_document(data, path, file_name)
+        
+        self.logger.info("Document created successfully (ID: %s, type: %s)", 
+                        result["document_id"], document_type)
+        return result
             
-            # 문서 타입에 맞는 전략 선택
-            strategy = self.strategy_factory.get_strategy(document_type)
-            
-            # 선택된 전략으로 문서 생성
-            result = strategy.generate_document(data)
-            
-            self.logger.info("Document created successfully (ID: %s, type: %s)", 
-                           result["document_id"], document_type)
-            return result
-            
-        except Exception as e:
-            self.logger.error("Error creating document: %s", str(e), exc_info=True)
-            raise DocumentAutomationError(f"문서 생성 중 오류 발생: {str(e)}")
     
     def save_pdf(self, pdf_data: bytes, output_path: str) -> str:
         """PDF 파일 저장
