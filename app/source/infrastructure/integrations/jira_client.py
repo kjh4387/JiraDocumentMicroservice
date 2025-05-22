@@ -274,7 +274,7 @@ if __name__ == "__main__":
     
     client = JiraClient(JIRA_URL, JIRA_USER, JIRA_TOKEN, field_mapper=field_mapper)
     
-    issue_key = input("Enter the issue key (e.g., ACCO-16): ").strip()
+    issue_key = "ACCO-" + input("Enter the issue key (e.g., ACCO-16): ").strip()
     
     # 이슈 정보 가져오기
     issue_data = client.get_issue(issue_key)
@@ -283,5 +283,9 @@ if __name__ == "__main__":
         print(f"{field}: {fields[field]}")
     
     # 첨부 파일 다운로드
-    downloaded_files = client.download_attachments(issue_key)
-    print(f"Downloaded {len(downloaded_files)} files")
+    # downloaded_files = client.download_attachments(issue_key)
+    # print(f"Downloaded {len(downloaded_files)} files")
+
+    # 첨부 파일 업로드
+    uploaded_files = client.upload_attachment(issue_key, "output/ACCO-74_회의비사용신청서.pdf")
+    print(f"Uploaded {len(uploaded_files)} files")
