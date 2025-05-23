@@ -14,15 +14,19 @@ from datetime import datetime
 import shutil
 from enum import Enum
 
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))  # /workspace/app
+
 class DocumentStrategyType(Enum):
     GENERATION = "generation"  # 문서 생성
     DOWNLOAD = "download"     # 문서 다운로드
 
 
-# Flask 앱 인스턴스 생성
-app = Flask(__name__, 
-           static_folder="../resources",  # app/resources 디렉토리를 정적 파일로 제공
-           template_folder="../source/templates")   # app/source/templates 디렉토리를 템플릿으로 제공
+app = Flask(
+    __name__,
+    static_folder=os.path.join(BASE_DIR, "resources"),   # 실제 디스크 경로
+    static_url_path="/static",                           # URL 경로  ← 필요하면 /resources 로 바꿔도 됨
+    template_folder=os.path.join(BASE_DIR, "source", "templates"),
+)
 
 # CORS 설정
 CORS(app, resources={

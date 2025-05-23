@@ -103,7 +103,7 @@
                     </tr>
                     <tr>
                         <td class="content">연구 과제명</td>
-                        <td>{{ 연구과제_선택_key.project_period }}</td>
+                        <td>{{ 연구과제_선택_key.project_name }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -131,7 +131,8 @@
                         <td>{{ 출장_목적 }}</td>
                         <td>{{ 출장_시작일 }} ~ {{ 출장_종료일 }}</td>
                         <td>{{ participant.position }}</td>
-                        <td> <img src="file:///{{ participant.signature | urlencode }}" alt="서명" width="120"></td>
+                        <td> <img src="{{ url_for('static', filename='signature/' + participant.signature) }}"
+                            alt="{{ participant.name }} 서명" width="120"></td>
                     </tr>
                     {% endfor %}
                 </tbody>
