@@ -25,7 +25,8 @@ class DocumentStrategyFactory:
             "지출증빙",
             "통장사본",
             "견적서",
-            "거래명세서"
+            "거래명세서",
+            "여비규정"
         
         }
     
