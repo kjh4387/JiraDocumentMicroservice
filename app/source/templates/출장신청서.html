@@ -125,13 +125,13 @@
                         <th style="width: 10%;">출장 장소</th>
                         <th style="width: 10%;">서명</th>
                     </tr>
-                    {% for participant in 내부_인원 %}
+                    {% for participant in 출장_참석자 %}
                     <tr>
                         <td>{{ participant.name }}</td>
-                        <td>{{ participant.gaol }}</td>
-                        <td>{{ participant.date }}</td>
+                        <td>{{ 출장_목적 }}</td>
+                        <td>{{ 출장_시작일 }} ~ {{ 출장_종료일 }}</td>
                         <td>{{ participant.position }}</td>
-                        <td>{{ participant.sign }}</td>
+                        <td> <img src="file:///{{ participant.signature | urlencode }}" alt="서명" width="120"></td>
                     </tr>
                     {% endfor %}
                 </tbody>
