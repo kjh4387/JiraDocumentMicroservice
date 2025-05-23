@@ -20,26 +20,28 @@ class DocumentStrategyType(Enum):
     DOWNLOAD = "download"     # 문서 다운로드
 
 
-# ===== main.py 상단 =====
-BASE_DIR = Path(__file__).resolve().parents[1]          # /workspace/app
-STATIC_DIR = BASE_DIR / "resources"                     # 디스크 경로
-TEMPLATE_DIR = BASE_DIR / "source" / "templates"
 
-app = Flask(
-    __name__,
-    static_folder=str(STATIC_DIR),          # 디스크 경로
-    static_url_path="/static",              # 브라우저 URL prefix
-    template_folder=str(TEMPLATE_DIR),
-)
+def create_flask_app(config: dict, logger: logging.Logger) -> Flask:
+    """Flask 인스턴스를 설정값으로 생성하고 CORS 등 부가 설정을 적용."""
+    app = Flask(
+        __name__,
+        static_folder=config["static_dir"],      # 디스크 절대경로
+        static_url_path="/static",
+        template_folder=config["template_dir"],
+    )
 
-# CORS 설정
-CORS(app, resources={
-    r"/api/*": {
-        "origins": "*",  # 모든 출처 허용
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ['*']  # 모든 헤더 허용
-    }
-})
+    # CORS
+    CORS(app, resources={
+        r"/api/*": {
+            "origins": "*",
+            "methods": ["GET", "POST", "OPTIONS"],
+            "allow_headers": ["*"],
+        }
+    })
+
+    app.config["TEMPLATES_AUTO_RELOAD"] = True
+    app.logger = logger                       
+    return app
 
 container: Optional[DIContainer] = None
 
@@ -108,6 +110,7 @@ def load_config() -> Dict[str, Any]:
     config = {
         "schema_path": os.path.join("app", "source", "schemas", "IntegratedDocumentSchema.json"),
         "template_dir": os.path.join("app", "source", "templates"),
+        "static_dir": os.path.abspath(os.path.join("app", "resources")),
         "output_dir": os.path.join("output"),
         "dir_name_format": "{research_project}/{parent_issue_subject}/{date}_{parent_issue_key}_{parent_issue_summary}",
         "file_name_format": "{summary}",
@@ -270,33 +273,26 @@ def process_save_document(request_data: Dict[str, Any], result: Dict[str, Any]):
 
 log_level = os.environ.get("LOG_LEVEL", "INFO")
 
-def initialize_app(config_path=None, log_level=log_level):
-    """Flask 앱 초기화 함수"""
-    global container
-    
-    # 로깅 설정
+def initialize_app(log_level: str = "INFO") -> Flask:
+    """설정 ▸ DI ▸ Flask 세 단계를 모두 초기화."""
+    # 1) 로깅
     logger = setup_logging(log_level)
-    logger.info("Starting Flask app with log level: %s", log_level)
-    
-    # 설정 로드
+
+    # 2) 설정
     config = load_config()
-    
-    # 출력 디렉토리 생성
-    os.makedirs(config['output_dir'], exist_ok=True)
-    
-    # DI 컨테이너 초기화
+    os.makedirs(config["output_dir"], exist_ok=True)
+
+    # 3) DIContainer
+    global container
     container = DIContainer(config, logger)
-    
-    # Flask 애플리케이션 추가 설정
-    app.config['TEMPLATES_AUTO_RELOAD'] = True
-    
-    # 시작 로그
-    logger.info("Flask application initialized successfully")
-    
+
+    # 4) Flask
+    app = create_flask_app(config, logger)
+
+    logger.info("Flask application initialized")
     return app
 
-# 앱 초기화 - 컨테이너에서 자동 시작을 위해
-initialize_app(log_level=os.environ.get("LOG_LEVEL", "INFO"))
+app: Flask = initialize_app(log_level=os.getenv("LOG_LEVEL", "INFO"))
 
 def main():
     """메인 함수"""

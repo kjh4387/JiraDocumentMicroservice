@@ -15,13 +15,15 @@ import base64
 class JinjaDocumentRenderer(DocumentRenderer):
     """Jinja2를 사용한 문서 렌더링 - 통합 템플릿 방식"""
     
-    def __init__(self, template_dir: str, logger: logging.Logger = None):
+    def __init__(self, template_dir: str, static_dir: str, logger: logging.Logger = None):
         """
         Args:
             template_dir: 템플릿 디렉토리 경로
+            static_dir: 정적 파일 디렉토리 경로
             logger: 로거 인스턴스
         """
         self.template_dir = template_dir
+        self.static_dir = static_dir
         self.logger = logger or logging.getLogger(__name__)
         self.logger.debug("Initializing JinjaDocumentRenderer with template_dir: %s", template_dir)
         

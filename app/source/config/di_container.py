@@ -118,6 +118,7 @@ class DIContainer:
         if self._document_renderer is None:
             self._document_renderer = JinjaDocumentRenderer(
                 self.config["template_dir"],
+                self.config["static_dir"],
                 logger=self.logger
             )
             self.logger.debug("DocumentRenderer created")
@@ -125,9 +126,12 @@ class DIContainer:
     
     @property
     def pdf_generator(self) -> PdfGenerator:
-        """PDF 생성기 인스턴스 반환"""
+        """ PDF 생성기 인스턴스 반환 """
         if self._pdf_generator is None:
-            self._pdf_generator = WeasyPrintPdfGenerator(self.logger)
+            self._pdf_generator = WeasyPrintPdfGenerator(
+                base_url=self.config["static_dir"],   # ★
+                logger=self.logger
+            )
         return self._pdf_generator
     
     @property
@@ -300,6 +304,7 @@ class DIContainer:
         # 인스턴스 생성
         renderer = JinjaDocumentRenderer(
             template_dir=template_dir,
+            static_dir=self.config["static_dir"],
             logger=self.logger
         )
         

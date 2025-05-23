@@ -8,6 +8,8 @@ import os
 import tempfile
 import shutil
 from enum import Enum
+from flask import current_app, has_app_context, request
+
 
 class DocumentStrategyType(Enum):
     GENERATION = "generation"  # 문서 생성
@@ -29,73 +31,74 @@ class DocumentGenerationStrategy(DocumentGenerationStrategy):
         self.logger = logger
         self.strategy_type = DocumentStrategyType.GENERATION
     
+    def _resolve_base_url(self) -> str | None:
+        """PDF 생성 시 사용할 base_url 결정 로직"""
+        if has_app_context():
+            # HTTP 요청 핸들러 안에서 호출된 경우
+            return current_app.static_folder      # file:///… 경로
+            # 또는  return request.url_root + 'static/'
+        else:
+            # CLI 실행 등 Flask 컨텍스트가 없을 때
+            return str(self.renderer.static_dir)  # DI로 주입해 둔 절대경로
+        
     def generate_document(self, data: Dict[str, Any], path = None, file_name = None) -> Dict[str, Any]:
         """기본 문서 생성 프로세스"""
-        try:
-            # 데이터 보강
-            render_data = data
-            if self.data_enricher:
-                self.logger.debug("Data enrichment started")
-                try:
-                    enriched_data = self.data_enricher.enrich(data["document_type"], data)
-                    if enriched_data:
-                        render_data = enriched_data
-                except Exception as e:
-                    self.logger.error("Data enrichment failed: %s", str(e))
-            else:
-                self.logger.debug("Data enrichment is not set, skipping")
-            
-            # HTML 렌더링
-            html = self.renderer.render(data["document_type"], render_data)
-            
-            # PDF 생성
-            pdf = self.pdf_generator.generate(html)
-            
-            # 임시 파일 저장
-            if path is None and file_name is not None:
-                path = tempfile.mkdtemp()
-                output_path = os.path.join(
-                    path,
-                    file_name
-                )
-                with open(output_path, "wb") as f:
-                    f.write(pdf)
-            elif file_name is None and path is not None:
-                file_name = f"{data['key']}_{data['document_type']}.pdf"
-                output_path = os.path.join(
-                    path,
-                    file_name
-                )
-                with open(output_path, "wb") as f:
-                    f.write(pdf)
-            else:
-                path = tempfile.mkdtemp()
-                file_name = f"{data['key']}_{data['document_type']}.pdf"
-                output_path = os.path.join(path, file_name)
-                with open(output_path, "wb") as f:
-                    f.write(pdf)
+        # 데이터 보강
+        render_data = data
+        if self.data_enricher:
+            self.logger.debug("Data enrichment started")
+            try:
+                enriched_data = self.data_enricher.enrich(data["document_type"], data)
+                if enriched_data:
+                    render_data = enriched_data
+            except Exception as e:
+                self.logger.error("Data enrichment failed: %s", str(e))
+        else:
+            self.logger.debug("Data enrichment is not set, skipping")
+        
+        # HTML 렌더링
+        html = self.renderer.render(data["document_type"], render_data)
+
+        # PDF 생성
+        base_url = self._resolve_base_url()
+        pdf = self.pdf_generator.generate(html, base_url=base_url)
+        
+        # 임시 파일 저장
+        if path is None and file_name is not None:
+            path = tempfile.mkdtemp()
+            output_path = os.path.join(
+                path,
+                file_name
+            )
+            with open(output_path, "wb") as f:
+                f.write(pdf)
+        elif file_name is None and path is not None:
+            file_name = f"{data['key']}_{data['document_type']}.pdf"
+            output_path = os.path.join(
+                path,
+                file_name
+            )
+            with open(output_path, "wb") as f:
+                f.write(pdf)
+        else:
+            path = tempfile.mkdtemp()
+            file_name = f"{data['key']}_{data['document_type']}.pdf"
+            output_path = os.path.join(path, file_name)
+            with open(output_path, "wb") as f:
+                f.write(pdf)
 
 
-            # 결과 반환
-            return {
-                "document_id": str(uuid.uuid4()),
-                "document_type": data["document_type"],
-                "created_at": datetime.now().isoformat(),
-                "full_path": output_path,
-                "file_path": path,
-                "file_name": file_name,
-                "strategy_type": self.strategy_type.value
-            }
+        # 결과 반환
+        return {
+            "document_id": str(uuid.uuid4()),
+            "document_type": data["document_type"],
+            "created_at": datetime.now().isoformat(),
+            "full_path": output_path,
+            "file_path": path,
+            "file_name": file_name,
+            "strategy_type": self.strategy_type.value
+        }
             
-        except RenderingError as e:
-            self.logger.error("Failed to render document: %s", str(e))
-            raise
-        except PdfGenerationError as e:
-            self.logger.error("Failed to generate PDF: %s", str(e))
-            raise
-        except Exception as e:
-            self.logger.error("Unexpected error: %s", str(e))
-            raise DocumentAutomationError(f"문서 생성 중 오류 발생: {str(e)}, path: {path}, file_name: {file_name}")
 
 class DownloadDocumentStrategy(DocumentGenerationStrategy):
     """문서를 다운로드 받는 경우의 문서 생성 전략"""

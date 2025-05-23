@@ -138,7 +138,7 @@ class PdfGenerator(ABC):
     """PDF 생성 인터페이스"""
     
     @abstractmethod
-    def generate(self, html: str) -> bytes:
+    def generate(self, html: str, base_url: str) -> bytes:
         """HTML을 PDF로 변환"""
         pass
 

@@ -83,6 +83,16 @@
         .footer-content {
             text-align: right; /* 작성일 오른쪽 정렬 */
         }
+        .signature-container {
+            position: absolute;
+            top: -20px;        /* 텍스트 위로 살짝 올림 */
+            /* left: 160px;       위치 조정 */
+            width: 100px;      /* 서명 크기 */
+            height: auto;
+            /* opacity: 0.5;      반투명 */
+            z-index: 1;        /* 텍스트 위로 */
+            pointer-events: none; /* 클릭 방지 */
+        }
     
     </style>
 </head>
@@ -132,7 +142,7 @@
                         <td>{{ 출장_시작일 }} ~ {{ 출장_종료일 }}</td>
                         <td>{{ participant.position }}</td>
                         <td> <img src="{{ participant.signature }}"
-                            alt="{{ participant.name }} 서명" width="120"></td>
+                            alt="{{ participant.name }} 서명" style="width: 60px;"></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -142,8 +152,10 @@
                 <div class="footer-border"></div>
                 <div class="footer-content">
                     <h3>작성일: {{ 증빙_일자 }}</h3>
-                    <h3>신청인) 소속: &ensp; 메테오 시뮬레이션 &ensp; 성명:  &ensp; {{ applicant_name }} <span class="signature-container">(인 또는 서명) 
+                    <h3>신청인) 소속: &ensp; 메테오 시뮬레이션 &ensp; 성명:  &ensp; {{ assignee.name }}
+                        <span class="signature-container"><img src="{{ assignee.signature }}"alt="{{ assignee.name }} 서명" style="width: 60px;">(인 또는 서명) 
                     </span></h3>
+                    
                 </div>
             </div>
         </div>
