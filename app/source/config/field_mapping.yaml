@@ -120,6 +120,13 @@ field_patterns:
       - name: department
       - name: position
       - name: email
+      - name: affiliation
+      - name: phone
+      - name: signature
+      - name: stamp
+      - name: bank_name
+      - name: account_number
+      - name: birth_date
 
   내부_인원:
     type: employee
@@ -127,10 +134,16 @@ field_patterns:
     id_field: accountId
     enrich_fields:
       - name: name
-      - name: affiliation
       - name: department
       - name: position
       - name: email
+      - name: affiliation
+      - name: phone
+      - name: signature
+      - name: stamp
+      - name: bank_name
+      - name: account_number
+      - name: birth_date
   
   출장_참석자:
     type: employee
@@ -138,8 +151,14 @@ field_patterns:
     id_field: accountId
     enrich_fields:
       - name: name
-      - name: affiliation
       - name: department
       - name: position
       - name: email
+      - name: affiliation
+      - name: phone
+      - name: signature
+      - name: stamp
+      - name: bank_name
+      - name: account_number
+      - name: birth_date
   
