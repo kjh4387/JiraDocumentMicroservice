@@ -69,7 +69,7 @@
             align-items: flex-end; /* 오른쪽 정렬 */
             width: 100%;
             padding: 5mm 0;
-            height: 30mm;
+            /* height: 30mm; */
             box-sizing: border-box;
             margin-top: auto;
         }
@@ -84,14 +84,16 @@
             text-align: right; /* 작성일 오른쪽 정렬 */
         }
         .signature-container {
-            position: absolute;
-            /* top: -20px;        텍스트 위로 살짝 올림 */
-            /* left: 160px;       위치 조정 */
-            width: 100px;      /* 서명 크기 */
-            height: auto;
-            /* opacity: 0.5;      반투명 */
-            z-index: 1;        /* 텍스트 위로 */
+            display: inline-flex;
+            align-items: center;
+            gap: 4px; /* 텍스트와 이미지 간격 */
+            margin-left: 8px;
         }
+/* 
+        .signature-container img {
+            height: auto;
+            vertical-align: middle;
+        } */
     
     </style>
 </head>
@@ -153,10 +155,9 @@
                     <h3>작성일: {{ 증빙_일자 }}</h3>
                     <h3>신청인) 소속: &ensp; 메테오 시뮬레이션 &ensp; 성명:  &ensp; {{ assignee.name }}
                         <span class="signature-container">
-                                <img src="{{ assignee.signature }}"alt="{{ assignee.name }} 서명" style="width: 60px;">
-                                (인 또는 서명) 
-                        </span>
-                    </h3>
+                            <img src="{{ assignee.signature }}" alt="{{ assignee.name }} 서명">
+                            (인 또는 서명) 
+                    </span></h3>
                 </div>
             </div>
         </div>
