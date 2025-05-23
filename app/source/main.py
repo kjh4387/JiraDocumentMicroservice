@@ -28,8 +28,8 @@ app = Flask(__name__,
 CORS(app, resources={
     r"/api/*": {
         "origins": "*",  # 모든 출처 허용
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["*"]  # 모든 헤더 허용
+        "methods": ['GET", "POST", "OPTIONS'],
+        "allow_headers": ['*']  # 모든 헤더 허용
     }
 })
 
@@ -124,7 +124,7 @@ def process_jira_issue_with_data(container: DIContainer, issue_data: dict) -> Op
     """Jira 이슈 데이터 처리"""
     logger = container.logger
     jira_data = issue_data
-    issue_key = jira_data["key"]
+    issue_key = jira_data['key']
     # Jira의 custom field 부분을 필드명으로 매핑
     mapped_jira_data = container.jira_client.map_issue(jira_data)
     
@@ -133,7 +133,7 @@ def process_jira_issue_with_data(container: DIContainer, issue_data: dict) -> Op
     document_data = container.jira_document_mapper.preprocess_fields(mapped_jira_data)
 
     document_type = container.document_service.get_document_type(document_data)
-    document_data["document_type"] = document_type
+    document_data['document_type'] = document_type
     logger.info(f"Document type: {document_type}")
 
 
@@ -143,16 +143,16 @@ def process_jira_issue_with_data(container: DIContainer, issue_data: dict) -> Op
     # 디버깅을 위한 파일 저장
     if logger.isEnabledFor(logging.DEBUG):
         output_path = os.path.join(
-            container.config["output_dir"],
+            container.config['output_dir'],
             f"{issue_key}_{result['document_type']}.pdf"
         )
-        shutil.copy(result["full_path"], output_path)
+        shutil.copy(result['full_path'], output_path)
         logger.info("Document saved to: %s", output_path)
     
     process_save_document(document_data, result)
     # PDF 바이트 데이터를 제외한 응답 생성
     response_data = {
-        "document_type": result["document_type"],
+        "document_type": result['document_type'],
         "issue_key": issue_key,
         "status": "success"
     }
@@ -185,22 +185,22 @@ def sanitize_folder_name(name: str) -> str:
 def _get_document_path(issue_data: dict) -> str:
     """문서 저장 경로 결정"""
     # config의 dir_name_format을 사용하여 디렉토리 경로 생성
-    dir_path = container.config["dir_name_format"].format(
-        research_project=f"({issue_data["fields"]["연구과제_선택_key"]["project_code"]}){sanitize_folder_name(issue_data["fields"]["연구과제_선택_key"]["project_name"])}",
-        parent_issue_subject=issue_data["fields"]["parent"]['fields']['issuetype']['name'],
+    dir_path = container.config['dir_name_format'].format(
+        research_project=f"({issue_data['fields']['연구과제_선택_key']['project_code']}){sanitize_folder_name(issue_data['fields']['연구과제_선택_key']['project_name'])}",
+        parent_issue_subject=issue_data['fields']['parent']['fields']['issuetype']['name'],
         date=issue_data['fields']['증빙_일자'],
-        parent_issue_key=issue_data["fields"]["parent"]['key'],
-        parent_issue_summary=issue_data["fields"]["parent"]['fields']['summary']
+        parent_issue_key=issue_data['fields']['parent']['key'],
+        parent_issue_summary=issue_data['fields']['parent']['fields']['summary']
     )
     logger = container.logger
     logger.debug(f"dir_path: {dir_path}")
-    return os.path.join(container.config["output_dir"], dir_path)
+    return os.path.join(container.config['output_dir'], dir_path)
 
 def _get_document_name(issue_data: dict, extension: str = "pdf") -> str:
     """문서 이름 결정"""
 
-    name = container.config["file_name_format"].format(
-        summary=issue_data["fields"]["summary"]
+    name = container.config['file_name_format'].format(
+        summary=issue_data['fields']['summary']
     )
     logger = container.logger
     logger.debug(f"name: {name}")
@@ -240,21 +240,21 @@ def process_save_document(request_data: Dict[str, Any], result: Dict[str, Any]):
     import shutil
     if strategy_type == DocumentStrategyType.GENERATION.value:
         # Jira에 업로드
-        container.jira_client.upload_attachment(request_data["key"], result["full_path"])
+        container.jira_client.upload_attachment(request_data['key'], result['full_path'])
         # 생성된 PDF 파일 저장
         path = os.path.join(_get_document_path(request_data),  _get_document_name(request_data))
         logger.debug(f"path: {path}")
         # destination directory 생성
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        shutil.copy(result["full_path"], path)
+        shutil.copy(result['full_path'], path)
     
     elif strategy_type == DocumentStrategyType.DOWNLOAD.value:
         # 다운로드된 파일은 이미 Jira에 있으므로 업로드 불필요
-        path = os.path.join(_get_document_path(request_data),  _get_document_name(request_data, result["extension"]))
+        path = os.path.join(_get_document_path(request_data),  _get_document_name(request_data, result['extension']))
         # destination directory 생성
         os.makedirs(os.path.dirname(path), exist_ok=True)
         logger.debug(f"result['file_path']: {result['file_path']}, path: {path}")
-        shutil.copy2(result["full_path"], path)
+        shutil.copy2(result['full_path'], path)
     
     logger.info("Document saved to: %s", path)
 
@@ -274,7 +274,7 @@ def initialize_app(config_path=None, log_level=log_level):
     config = load_config()
     
     # 출력 디렉토리 생성
-    os.makedirs(config["output_dir"], exist_ok=True)
+    os.makedirs(config['output_dir'], exist_ok=True)
     
     # DI 컨테이너 초기화
     container = DIContainer(config, logger)
@@ -297,7 +297,7 @@ def main():
     parser.add_argument("issue_key", help="Jira 이슈 키 (예: ACCO-74)")
     parser.add_argument("--output-dir", help="출력 디렉토리 경로")
     parser.add_argument("--log-level", default="INFO", 
-                       choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+                       choices=['DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL'],
                        help="로깅 레벨 설정")
     args = parser.parse_args()
     
@@ -311,10 +311,10 @@ def main():
         
         # 출력 디렉토리 설정
         if args.output_dir:
-            config["output_dir"] = args.output_dir
+            config['output_dir'] = args.output_dir
         
         # 출력 디렉토리 생성
-        os.makedirs(config["output_dir"], exist_ok=True)
+        os.makedirs(config['output_dir'], exist_ok=True)
         
         # DI 컨테이너 초기화
         global container
@@ -334,7 +334,7 @@ def main():
         logger.error("Unexpected error: %s", str(e), exc_info=True)
         sys.exit(1)
 
-@app.route("/api/documents", methods=["POST"])
+@app.route("/api/documents", methods=['POST'])
 def create_document():
     """문서 생성 API"""
     try:
@@ -344,7 +344,7 @@ def create_document():
         logger.debug("Request Content-Type: %s", request.content_type)
         logger.debug("Request Body: %s", request.get_data(as_text=True))
             
-        result = process_jira_issue_with_data(get_container(), request_data["issue"])
+        result = process_jira_issue_with_data(get_container(), request_data['issue'])
         
         if not result:
             return jsonify({"error": "Failed to process Jira issue"}), 500
@@ -356,7 +356,7 @@ def create_document():
         app.logger.error(f"Error creating document: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
-@app.route("/api/debug/file-check", methods=["GET"])
+@app.route("/api/debug/file-check", methods=['GET'])
 def check_files():
     """파일 시스템 디버깅 API"""
     try:
@@ -376,12 +376,12 @@ def check_files():
         
         # 전체 경로 생성
         full_path = os.path.join(base_dir, file_path)
-        result["full_path"] = full_path
+        result['full_path'] = full_path
         
         # 파일 또는 디렉토리 존재 여부 확인
-        result["exists"] = os.path.exists(full_path)
-        result["is_file"] = os.path.isfile(full_path) if result["exists"] else False
-        result["is_dir"] = os.path.isdir(full_path) if result["exists"] else False
+        result['exists'] = os.path.exists(full_path)
+        result['is_file'] = os.path.isfile(full_path) if result['exists'] else False
+        result['is_dir'] = os.path.isdir(full_path) if result['exists'] else False
         
         # 여러 경로 변형 확인
         check_paths = [
@@ -392,7 +392,7 @@ def check_files():
         ]
         
         for path in check_paths:
-            result["file_checks"].append({
+            result['file_checks'].append({
                 "path": path,
                 "exists": os.path.exists(path),
                 "is_file": os.path.isfile(path) if os.path.exists(path) else False,
@@ -400,19 +400,19 @@ def check_files():
             })
         
         # 디렉토리인 경우 내용 나열
-        if result["is_dir"]:
+        if result['is_dir']:
             try:
                 files = os.listdir(full_path)
-                result["directory_listing"]["files"] = files
-                result["directory_listing"]["count"] = len(files)
+                result['directory_listing']['files'] = files
+                result['directory_listing']['count'] = len(files)
             except Exception as e:
-                result["directory_listing"]["error"] = str(e)
+                result['directory_listing']['error'] = str(e)
         
         # 정적 파일 디렉토리 내용 나열
         try:
             static_dir = os.path.join(base_dir, "resources")
             if os.path.isdir(static_dir):
-                result["static_directory"] = {
+                result['static_directory'] = {
                     "path": static_dir,
                     "files": os.listdir(static_dir)[:20],  # 처음 20개만 표시
                     "count": len(os.listdir(static_dir))
@@ -421,13 +421,13 @@ def check_files():
                 # signature 폴더 확인
                 sig_dir = os.path.join(static_dir, "signature")
                 if os.path.isdir(sig_dir):
-                    result["signature_directory"] = {
+                    result['signature_directory'] = {
                         "path": sig_dir,
                         "files": os.listdir(sig_dir),
                         "count": len(os.listdir(sig_dir))
                     }
         except Exception as e:
-            result["static_directory_error"] = str(e)
+            result['static_directory_error'] = str(e)
         
         return jsonify(result)
     except Exception as e:
