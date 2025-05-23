@@ -13,26 +13,30 @@ import logging.handlers
 from datetime import datetime
 import shutil
 from enum import Enum
-
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))  # /workspace/app
+from pathlib import Path
 
 class DocumentStrategyType(Enum):
     GENERATION = "generation"  # 문서 생성
     DOWNLOAD = "download"     # 문서 다운로드
 
 
+# ===== main.py 상단 =====
+BASE_DIR = Path(__file__).resolve().parents[1]          # /workspace/app
+STATIC_DIR = BASE_DIR / "resources"                     # 디스크 경로
+TEMPLATE_DIR = BASE_DIR / "source" / "templates"
+
 app = Flask(
     __name__,
-    static_folder=os.path.join(BASE_DIR, "resources"),   # 실제 디스크 경로
-    static_url_path="/static",                           # URL 경로  ← 필요하면 /resources 로 바꿔도 됨
-    template_folder=os.path.join(BASE_DIR, "source", "templates"),
+    static_folder=str(STATIC_DIR),          # 디스크 경로
+    static_url_path="/static",              # 브라우저 URL prefix
+    template_folder=str(TEMPLATE_DIR),
 )
 
 # CORS 설정
 CORS(app, resources={
     r"/api/*": {
         "origins": "*",  # 모든 출처 허용
-        "methods": ['GET", "POST", "OPTIONS'],
+        "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ['*']  # 모든 헤더 허용
     }
 })
@@ -301,7 +305,7 @@ def main():
     parser.add_argument("issue_key", help="Jira 이슈 키 (예: ACCO-74)")
     parser.add_argument("--output-dir", help="출력 디렉토리 경로")
     parser.add_argument("--log-level", default="INFO", 
-                       choices=['DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL'],
+                       choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
                        help="로깅 레벨 설정")
     args = parser.parse_args()
     
