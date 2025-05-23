@@ -188,44 +188,6 @@ class JinjaDocumentRenderer(DocumentRenderer):
             template_name = self._get_template_path(document_type)
             self.logger.debug("Using template: %s", template_name)
             
-            # 서명 이미지 경로 확인 및 존재 여부 검사 (디버깅)
-            if 'assignee' in data.get('fields', {}):
-                assignee = data['fields']['assignee']
-                if isinstance(assignee, dict) and 'signature' in assignee:
-                    sig_path = assignee['signature']
-                    self.logger.debug(f"Original signature path: {sig_path}")
-                    
-                    # 정적 URL 변환
-                    static_sig_url = self.template_env.globals['static_url'](sig_path)
-                    self.logger.debug(f"Static signature URL: {static_sig_url}")
-                    
-                    # 실제 파일 경로 확인
-                    if sig_path.startswith('static/'):
-                        # static/ 접두어 제거 - Flask는 이미 static_folder를 "/static" URL에 매핑함
-                        stripped_path = sig_path.replace('static/', '')
-                        real_path = os.path.join('/app/resources', stripped_path)
-                    else:
-                        real_path = os.path.join('/app/resources', sig_path)
-                    
-                    # 파일 존재 여부 확인
-                    if os.path.exists(real_path):
-                        self.logger.debug(f"Signature file exists at: {real_path}")
-                    else:
-                        self.logger.warning(f"Signature file NOT found at: {real_path}")
-                        # 다른 가능한 경로 시도
-                        alternative_paths = [
-                            sig_path,
-                            os.path.join('/app/resources', sig_path),
-                            os.path.join('/app', sig_path),
-                            os.path.join('/workspace/app/resources', sig_path.replace('static/', '')),
-                            os.path.join('/app/static', sig_path.replace('static/', ''))
-                        ]
-                        for alt_path in alternative_paths:
-                            if os.path.exists(alt_path):
-                                self.logger.debug(f"Signature file found at alternative path: {alt_path}")
-                                break
-                            else:
-                                self.logger.debug(f"Tried alternative path but not found: {alt_path}")
             
             # 템플릿에 전달할 컨텍스트 준비
             # Jira 데이터를 그대로 전달하되, 최상위 키도 접근 가능하게 함
