@@ -111,7 +111,7 @@ def load_config() -> Dict[str, Any]:
         "schema_path": os.path.join("app", "source", "schemas", "IntegratedDocumentSchema.json"),
         "template_dir": os.path.join("app", "source", "templates"),
         "static_dir": os.path.abspath(os.path.join("app", "resources")),
-        "output_dir": os.path.join("output/00. 연구비 증빙서류"),
+        "output_dir": os.path.join("output/Paperworks/Paperworks/00. 연구비 증빙서류"),
         "dir_name_format": "{research_project}/{parent_issue_subject}/{date}_{parent_issue_key}_{parent_issue_summary}",
         "file_name_format": "{summary}",
         "database": {
