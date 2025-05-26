@@ -82,6 +82,20 @@
         .footer-content {
             text-align: right; /* 작성일 오른쪽 정렬 */
         }
+
+        .signature-container {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .signature-image {
+            position: absolute;
+            top: -20px;
+            right: 6px;
+            width: 60px;      /* 서명 크기 */
+            height: auto;
+            z-index: 1;        /* 텍스트 위로 */
+        }
     
     </style>
 </head>
@@ -115,15 +129,15 @@
                     <tr>
                         <td rowspan="2">참여인원</td>
                         <td>내부 참석자</td>
-                        <td>명</td>
+                        <td>{{ 내부_인원|length }} 명</td>
                     </tr>
                     <tr>
                         <td>외부 참석자</td>
-                        <td>명</td>
+                        <td>{{ 외부_인원|length }} 명</td>
                     </tr>
                 </thead>
             </table>
-            <div style="color: red;">
+            <div style="color: red; height: 60px;">
                 *회의비 1인당 최대 30,000원 지원<br/>
                 *심야시간대 10:00 이후 사용 및 유흥업소/주류구입에 대한 사용 금액은 지원 불가
             </div>
@@ -131,8 +145,13 @@
         <div class="footer">
             <div class="footer-border"></div>
             <div class="footer-content">
-                <h3>작성일: {{ 증빙_일자 }}</h3>
-                <p><h3>대표: 김지태 (인 또는 서명)</h3></p>
+                <h3>작성일: {{ 증빙_일자 }}</h3><br>
+                <h3>대표) 소속: 메테오 시뮬레이션  &ensp; 성명: 김지태
+                    <span class="signature-container">
+                        <img src="signature/김지태.png" class="signature-image" alt="서명">
+                        (인 또는 서명)
+                    </span>
+                </h3>
             </div>
         </div>
     </div>
