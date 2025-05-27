@@ -148,7 +148,8 @@
             <div class="footer-content" style="text-align: right;">
                 <h3>위 금액을 영수(청구)합니다.</h3>
                 <h3>작성일: {{ 증빙_일자 }}</h3>
-                <h3>신청인) 소속: 메테오 시뮬레이션 &ensp; 성명: {{ approval_list.name }} (인 또는 서명)</h3>
+                <h3>신청인) 소속: 메테오 시뮬레이션 &ensp; 성명: {{ assignee.name }} <img src="{{ assignee.stamp }}" class="signature-image" alt="서명">
+                    (인 또는 서명)</h3>
             </div>
         </div>
     </div>

@@ -53,7 +53,7 @@
             border: 0.5mm solid #cccccc;
             padding: 5px;
             text-align: center;
-            height: 20px;
+            height: 10px;
         }
     
         .head {
@@ -72,11 +72,11 @@
             margin-top: auto;
         }
     
-        .footer-border {
+        /* .footer-border {
             width: 100%;
-            /* border-top: 1px solid black; */
+            border-top: 1px solid black;
             margin-bottom: 5mm;
-        }
+        } */
     
         .footer-content {
             text-align: right; /* 작성일 오른쪽 정렬 */
@@ -127,11 +127,11 @@
                 <thead>
                     <!-- 헤더: 소속 등은 기본값(고정) 또는 필요시 별도 플레이스홀더 사용 -->
                     <tr>
-                        <th style="width: 15%;">소속</th>
-                        <th colspan="3" style="width: 25%;">주식회사 메테오<br/>시뮬레이션</th>
+                        <th style="width: 10%;">소 속</th>
+                        <th colspan="3" style="width: 30%;">주식회사 메테오<br/>시뮬레이션</th>
                         <th style="width: 10%;">직 급<br/>(직위)</th>
-                        <th style="width: 10%;">대표</th>
-                        <th style="width: 10%;">성명</th>
+                        <th style="width: 10%;">대 표</th>
+                        <th style="width: 10%;">성 명</th>
                         <th style="width: 10%;">김지태</th>
                         <th style="width: 12%;">출장인원</th>
                         <th style="width: 8%;"> {{ participant|length }} 명 </th>
@@ -141,7 +141,7 @@
                     <!-- 출장일정 -->
                     <tr>
                         <td rowspan="2">출 장<br/>일 정</td>
-                        <td style="width: 10%;">일 시</td>
+                        <td style="width: 12%;">일 시</td>
                         <td colspan="8">{{ 출장_시작일 }} ~ {{출장_종료일}}</td>
                     </tr>
                     <tr>
@@ -150,21 +150,13 @@
                     </tr>
                     <!-- 운임 내역 (최대 4회) -->
                     <tr>
-                        <td rowspan="4">운 임</td>
+                        <td rowspan="3">운 임</td>
                         <td>일자</td>
                         <td colspan="2">교통편</td>
                         <td colspan="2">출발지</td>
                         <td colspan="2">도착지</td>
                         <td>등 급</td>
                         <td>금 액</td>
-                    </tr>
-                    <tr>
-                        <td></td>
-                        <td colspan="2"></td>
-                        <td colspan="2"></td>
-                        <td colspan="2"></td>
-                        <td></td>
-                        <td></td>
                     </tr>
                     <tr>
                         <td></td>
@@ -196,9 +188,9 @@
                     </tr>
                     <!-- 영수증 부착란 -->
                     <tr>
-                        <td rowspan="3">영 수 증<br/>부 착 란</td>
+                        <td rowspan="3">영<br/>수<br/>증<br/>부<br/>착<br/>란</td>
                         <td colspan="9">
-                            <h3>* 해당면에 부착이 어려운 경우, 영수증 첨부철에 부착하여 제출</h3>
+                            <h4>* 해당면에 부착이 어려운 경우, 영수증 첨부철에 부착하여 제출</h4>
                         </td>
                     </tr>
                     <tr>
@@ -208,7 +200,7 @@
                         </td>
                     </tr>
                     <tr>
-                        <td colspan="9" style="height: 150mm;">
+                        <td colspan="9" style="height: 100mm;">
                             
                         </td>
                     </tr>
@@ -216,10 +208,11 @@
                     <tr>
                         <td colspan="10">        
                             <div class="footer">
-                                <div class="footer-border"></div>
+                                <!-- <div class="footer-border"></div> -->
                                 <div class="footer-content">
-                                    <h4>작성일: {{ 증빙_일자 }}</h4><br>
-                                    <h4>신청인) 소속: 메테오 시뮬레이션 &ensp; 성명: {{ assignee.name }}
+                                    <h4>
+                                        작성일: {{ 증빙_일자 }}<br>
+                                        신청인) 소속: 메테오 시뮬레이션 &ensp; 성명: {{ assignee.name }}
                                         <span class="signature-container">
                                             <img src="{{ assignee.stamp }}" class="signature-image" alt="서명">
                                             (인 또는 서명)
