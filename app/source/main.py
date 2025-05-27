@@ -77,8 +77,7 @@ def setup_logging(level: str = "INFO") -> logging.Logger:
     
     
     # 파일 핸들러 설정
-    log_dir = os.path.join("output", "logs")
-    os.makedirs(log_dir, exist_ok=True)
+    log_dir = os.path.join( "logs")
     
     # 로그 파일명에 날짜 추가
     log_file = os.path.join(log_dir, f"app_{datetime.now().strftime('%Y%m%d')}.log")
@@ -152,13 +151,16 @@ def process_jira_issue_with_data(container: DIContainer, issue_data: dict) -> Op
     result = container.document_service.create_document(document_data, document_type)
     
     # 디버깅을 위한 파일 저장
-    if logger.isEnabledFor(logging.DEBUG):
-        output_path = os.path.join(
-            container.config['output_dir'],
-            f"{issue_key}_{result['document_type']}.pdf"
-        )
-        shutil.copy(result['full_path'], output_path)
-        logger.info("Document saved to: %s", output_path)
+    #if logger.isEnabledFor(logging.DEBUG):
+    #    output_path = os.path.join(
+    #        container.config['output_dir'],
+    #        f"{issue_key}_{result['document_type']}.pdf"
+    #    )
+    #    # 기존 파일이 존재하면 삭제
+    #    if os.path.exists(output_path):
+    #       os.remove(output_path)
+    #    shutil.copy(result['full_path'], output_path)
+    #    logger.info("Document saved to: %s", output_path)
     
     process_save_document(document_data, result)
     # PDF 바이트 데이터를 제외한 응답 생성
@@ -249,6 +251,7 @@ def process_save_document(request_data: Dict[str, Any], result: Dict[str, Any]):
     strategy_type = result.get("strategy_type", DocumentStrategyType.GENERATION.value)
     logger.debug(f"result: {result}")
     import shutil
+    from pathlib import Path
     if strategy_type == DocumentStrategyType.GENERATION.value:
         # Jira에 업로드
         container.jira_client.upload_attachment(request_data['key'], result['full_path'])
@@ -256,7 +259,10 @@ def process_save_document(request_data: Dict[str, Any], result: Dict[str, Any]):
         path = os.path.join(_get_document_path(request_data),  _get_document_name(request_data))
         logger.debug(f"path: {path}")
         # destination directory 생성
-        os.makedirs(os.path.dirname(path), exist_ok=True)
+        Path(_get_document_path(request_data)).mkdir(parents=True, exist_ok=True)
+        # 기존 파일이 존재하면 삭제
+        if os.path.exists(path):
+            os.remove(path)
         shutil.copy(result['full_path'], path)
     
     elif strategy_type == DocumentStrategyType.DOWNLOAD.value:
