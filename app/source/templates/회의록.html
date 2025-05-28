@@ -124,7 +124,7 @@
                     </tr>
                     <tr>
                         <td>회의 내용</td>
-                        <td colspan="2">{{ 회의록_내용 }}</td>
+                        <td colspan="2"><p style="white-space: pre-wrap; text-align: left; line-height: 1.5;">{{ 회의록_내용 }}</p></td>
                     </tr>
                     <tr>
                         <td rowspan="2">참여인원</td>
@@ -133,7 +133,7 @@
                     </tr>
                     <tr>
                         <td>외부 참석자</td>
-                        <td>{{ 외부_인원|length }} 명</td>
+                        <td>{{ 외부_인원_data|length }} 명</td>
                     </tr>
                 </thead>
             </table>
