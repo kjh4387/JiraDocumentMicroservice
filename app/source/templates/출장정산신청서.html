@@ -44,7 +44,7 @@
     
         table {
             width: 100%;
-            margin-top: 10mm;
+            margin-top: 7mm;
             border: 1mm solid black;
             border-collapse: collapse;
         }
@@ -58,7 +58,7 @@
     
         .head {
             text-align: center;
-            padding-bottom: 10mm;
+            padding-bottom: 5mm;
             border-bottom: 2px solid black;
         }
     
@@ -184,7 +184,7 @@
                         <td>계좌번호</td>
                         <td colspan="2">{{ participant.account_number }}</td>
                         <td>출장비</td>
-                        <td>{{ 출장비 }}</td>
+                        <td>{{ 지급액 }}</td>
                     </tr>
                     <!-- 영수증 부착란 -->
                     <tr>
@@ -201,7 +201,7 @@
                     </tr>
                     <tr>
                         <td colspan="9" style="height: 100mm;">
-                            <img src="{{ image_url }}" alt="영수증" style="width: 100px; height: 290px; object-fit: contain;">
+                            <img src="{{ image_url }}" alt="영수증" style="max-height: 90mm; object-fit: contain;">
                         </td>
                     </tr>
                     <!-- 푸터 -->
