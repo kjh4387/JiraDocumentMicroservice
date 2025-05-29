@@ -103,7 +103,7 @@
 <body>
     <div class="A4">
         {% for participant in 출장_참석자 %}
-        
+        <div style="height: 400mm;">
             <!-- 제목 영역 -->
             <div class="head">
                 <div style="font-size: 2em;">출장정산신청서</div>
@@ -216,9 +216,9 @@
                                     <div class="footer-content">
                                         <h4>
                                             작성일: {{ 증빙_일자 }}<br>
-                                            신청인) 소속: 메테오 시뮬레이션 &ensp; 성명: {{ assignee.name }}
+                                            신청인) 소속: 메테오 시뮬레이션 &ensp; 성명: {{ articipant.name }}
                                             <span class="signature-container">
-                                                <img src="{{ assignee.stamp }}" class="signature-image" alt="서명">
+                                                <img src="{{ articipant.stamp }}" class="signature-image" alt="서명">
                                                 (인 또는 서명)
                                             </span>
                                         </h4>
@@ -229,7 +229,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="page-break"> </div>
+        </div>
         {% endfor %}
     </div>
 </body>
