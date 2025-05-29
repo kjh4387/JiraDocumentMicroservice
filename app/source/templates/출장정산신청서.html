@@ -182,13 +182,13 @@
                         <tr>
                             <td>입금<br/>사항</td>
                             <td>은행</td>
-                            <td style="width: 10%;">{{ participant.bank }}</td>
+                            <td style="width: 10%;">{{ participant.bank_name }}</td>
                             <td>예금주</td>
                             <td>{{ participant.name }}</td>
                             <td>계좌번호</td>
                             <td colspan="2">{{ participant.account_number }}</td>
                             <td>출장비</td>
-                            <td>{{ 지급액 }}</td>
+                            <td>{{ (식비*식비_계상일수+일비*일비_계상일수)|format_number }}</td>
                         </tr>
                         <!-- 영수증 부착란 -->
                         <tr>
@@ -199,16 +199,16 @@
                         </tr>
                         <tr>
                             <td colspan="9" style="text-align: left;">
-                                일비: {{ 일비 }}<br/>
-                                식비: {{ 식비 }}
+                                일비: {{ 일비|format_number }}원*{{일비_계상일수}}<br/>
+                                식비: {{ 식비|format_number }}원*{{식비_계상일수}}<br/>
                                 {% if 항공비 is not none %}
                                     {% if 항공비 > 0 %}
-                                    <br/>항공비: {{ 항공비 }}
+                                        항공비: {{ 항공비|format_number }}원[선결제 실비지급]<br/>
                                     {% endif %}
                                 {% endif %}
                                 {% if 숙박비 is not none %}
                                     {% if 숙박비 > 0 %}
-                                        <br/>숙박비: {{ 숙박비 }}
+                                        숙박비: {{ 숙박비|format_number }}원[선결제 실비지급]<br/>
                                     {% endif %}
                                 {% endif %}
                                 
@@ -227,11 +227,13 @@
                                     <div class="footer-content">
                                         <h4>
                                             작성일: {{ 정산_일자 }}<br>
+                                            <br>
                                             신청인) 소속: 메테오 시뮬레이션 &ensp; 성명: {{ participant.name }}
                                             <span class="signature-container">
                                                 <img src="{{ participant.stamp }}" class="signature-image" alt="서명">
                                                 (인 또는 서명)
                                             </span>
+                                            <br/>
                                         </h4>
                                     </div>
                                 </div>
