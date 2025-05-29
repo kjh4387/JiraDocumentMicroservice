@@ -199,8 +199,8 @@
                         </tr>
                         <tr>
                             <td colspan="9" style="text-align: left;">
-                                일비: {{ 일비|format_number }}원*{{일비_계상일수}}<br/>
-                                식비: {{ 식비|format_number }}원*{{식비_계상일수}}<br/>
+                                일비: {{ 일비|format_number }}원*{{일비_계상일수|int}}<br/>
+                                식비: {{ 식비|format_number }}원*{{식비_계상일수|int}}<br/>
                                 {% if 항공비 is not none %}
                                     {% if 항공비 > 0 %}
                                         항공비: {{ 항공비|format_number }}원[선결제 실비지급]<br/>
