@@ -78,6 +78,23 @@ field_patterns:
       - name: bank_name
       - name: account_number
       - name: birth_date
+
+  서명인:
+    type: employee
+    id_field: accountId
+    value_key: accountId
+    enrich_fields:
+      - name: name
+      - name: department
+      - name: position
+      - name: email
+      - name: affiliation
+      - name: phone
+      - name: signature
+      - name: stamp
+      - name: bank_name
+      - name: account_number
+      - name: birth_date
     
   
 
