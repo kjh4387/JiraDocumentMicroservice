@@ -51,57 +51,56 @@ def get_container() -> DIContainer:
     return container
 
 # 로깅 설정
-def setup_logging(level: str = "INFO") -> logging.Logger:
-    """로깅 설정
-    
-    Args:
-        level: 로깅 레벨 (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-        
-    Returns:
-        설정된 로거 인스턴스
+def setup_logging(level: str = "INFO", log_dir_env: Optional[str] = None) -> logging.Logger:
+    """안전한 로깅 초기화
+    - 상대경로 → 절대경로 통일
+    - logs 디렉터리 없으면 자동 생성, 권한 오류 있으면 콘솔만 사용
+    - 중복 핸들러 방지
     """
-    # 루트 로거 설정
-    root_logger = logging.getLogger()
-    
-    # 로깅 레벨 설정
     numeric_level = getattr(logging, level.upper(), logging.INFO)
+
+    # 2) 로그 저장 디렉터리 결정
+    base_dir = Path(__file__).resolve().parent        # 프로젝트 루트(이 파일 기준)
+    log_dir  = Path(log_dir_env) if log_dir_env else base_dir / "logs"
+
+    # 3) 중복 핸들러 제거 (재호출 대비)
+    root_logger = logging.getLogger()
+    if root_logger.handlers:
+        for h in list(root_logger.handlers):
+            root_logger.removeHandler(h)
+            h.close()
+
     root_logger.setLevel(numeric_level)
-    
-    # 포맷터 설정
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    
-    # 스트림 핸들러 설정 (콘솔 출력)
-    stream_handler = logging.StreamHandler(sys.stdout)
-    stream_handler.setFormatter(formatter)
-    stream_handler.setLevel(numeric_level)
-    
-    
-    # 파일 핸들러 설정
-    log_dir = os.path.join( "logs")
-    
-    # 로그 파일명에 날짜 추가
-    log_file = os.path.join(log_dir, f"app_{datetime.now().strftime('%Y%m%d')}.log")
-    
-    # 파일 핸들러 설정 (최대 10MB, 백업 5개)
-    file_handler = logging.handlers.RotatingFileHandler(
-        log_file,
-        maxBytes=10*1024*1024,  # 10MB
-        backupCount=5,
-        encoding='utf-8'
-    )
-    file_handler.setFormatter(formatter)
-    file_handler.setLevel(numeric_level)
-    
-    # 핸들러 추가
-    root_logger.addHandler(stream_handler)
-    root_logger.addHandler(file_handler)
-    
-    # 다른 로거들의 레벨도 설정
-    for name in logging.root.manager.loggerDict:
-        logger = logging.getLogger(name)
-        logger.setLevel(numeric_level)
-    
-    root_logger.info(f"Logging initialized. Log file: {log_file}")
+
+    # 4) 공통 포맷터
+    fmt = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
+
+    # 5) 콘솔 스트림 핸들러 (항상)
+    sh = logging.StreamHandler(sys.stdout)
+    sh.setFormatter(fmt)
+    sh.setLevel(numeric_level)
+    root_logger.addHandler(sh)
+
+    # 6) 파일 핸들러 (권한·디렉터리 체크)
+    try:
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_file = log_dir / f"app_{datetime.now():%Y%m%d}.log"
+
+        fh = logging.handlers.RotatingFileHandler(
+            log_file,
+            maxBytes=10 * 1024 * 1024,  # 10 MB
+            backupCount=5,
+            encoding="utf-8",
+        )
+        fh.setFormatter(fmt)
+        fh.setLevel(numeric_level)
+        root_logger.addHandler(fh)
+        root_logger.info("File logging → %s", log_file)
+
+    except PermissionError as e:
+        # 쓰기 권한 없으면 파일 핸들러 생략하고 경고만 출력
+        root_logger.warning("Cannot write logs to %s (%s) — falling back to console only", log_dir, e)
+
     return root_logger
 
 def load_config() -> Dict[str, Any]:
