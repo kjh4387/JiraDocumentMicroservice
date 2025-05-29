@@ -43,16 +43,16 @@
     
         table {
             width: 100%;
-            margin-top: 7mm;
+            margin-top: 5mm;
             border: 1mm solid black;
             border-collapse: collapse;
         }
     
         th, td {
             border: 0.5mm solid #cccccc;
-            padding: 8px;
+            padding: 7px;
             text-align: center;
-            height: 30px;
+            height: 20px;
         }
     
         .head {
@@ -68,7 +68,6 @@
             align-items: flex-end; /* 오른쪽 정렬 */
             width: 100%;
             padding: 5mm 0;
-            height: 30mm;
             box-sizing: border-box;
             margin-top: auto;
         }
@@ -90,7 +89,7 @@
         
         .signature-image {
             position: absolute;
-            top: -20px;
+            top: -10px;
             right: 6px;
             width: 60px;      /* 서명 크기 */
             height: auto;
@@ -105,9 +104,9 @@
             <div style="font-size: 2em;">회의록</div>
         </div>
         <div class="content">
-            <h2> 회의 내용 </h2>
+            <h2 style="margin-bottom: 0;"> 회의 내용 </h2>
         </div>
-        <div class="table">
+        <div class="table" style="height: 220mm;">
             <table>
                 <thead>
                     <tr>
@@ -145,8 +144,8 @@
         <div class="footer">
             <div class="footer-border"></div>
             <div class="footer-content">
-                <h3>작성일: {{ 증빙_일자 }}</h3><br>
-                <h3>대표) 소속: 메테오 시뮬레이션  &ensp; 성명: 김지태
+                <h3>작성일: {{ 증빙_일자 }}<br>
+                대표) 소속: 메테오 시뮬레이션  &ensp; 성명: 김지태
                     <span class="signature-container">
                         <img src="stamp/김지태.png" class="signature-image" alt="서명">
                         (인 또는 서명)
