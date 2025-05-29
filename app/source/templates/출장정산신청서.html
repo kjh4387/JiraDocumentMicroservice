@@ -103,7 +103,7 @@
 <body>
     <div class="A4">
         {% for participant in 출장_참석자 %}
-        <div style="height: 400mm;">
+        <!-- <div style="height: 400mm;"> -->
             <!-- 제목 영역 -->
             <div class="head">
                 <div style="font-size: 2em;">출장정산신청서</div>
@@ -119,7 +119,7 @@
                         </tr>
                         <tr>
                             <td class="content">연구 과제명</td>
-                            <td>{{ 연구과제_선택_key.project_period }}</td>
+                            <td>{{ 연구과제_선택_key.project_name }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -134,11 +134,11 @@
                             <th style="width: 10%;">소 속</th>
                             <th colspan="3" style="width: 30%;">주식회사 메테오<br/>시뮬레이션</th>
                             <th style="width: 10%;">직 급<br/>(직위)</th>
-                            <th style="width: 10%;">{{ participant.position }}</th>
+                            <th style="width: 8%;">{{ participant.position }}</th>
                             <th style="width: 8%;">성 명</th>
                             <th style="width: 10%;">{{ participant.name }}</th>
                             <th style="width: 12%;">출장인원</th>
-                            <th style="width: 7%;"> {{ 출장_참석자|length }} 명 </th>
+                            <th style="width: 12%;"> {{ 출장_참석자|length }} 명 </th>
                         </tr>
                     </thead>
                     <tbody>
@@ -182,13 +182,13 @@
                         <tr>
                             <td>입금<br/>사항</td>
                             <td>은행</td>
-                            <td style="width: 10%;">{{ participant.bank_name }}</td>
+                            <td style="width: 8%;">{{ participant.bank_name }}</td>
                             <td>예금주</td>
                             <td>{{ participant.name }}</td>
-                            <td>계좌번호</td>
+                            <td>계좌<br/>번호</td>
                             <td colspan="2">{{ participant.account_number }}</td>
                             <td>출장비</td>
-                            <td>{{ (식비*식비_계상일수+일비*일비_계상일수)|format_number }}</td>
+                            <td>{{ (식비*식비_계상일수+일비*일비_계상일수)|format_number }} 원</td>
                         </tr>
                         <!-- 영수증 부착란 -->
                         <tr>
@@ -242,7 +242,7 @@
                     </tbody>
                 </table>
             </div>
-        </div>
+        <!-- </div> -->
         {% endfor %}
     </div>
 </body>
