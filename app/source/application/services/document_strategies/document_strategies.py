@@ -267,7 +267,47 @@ class PictureAttatchedDocumentStrategy(DefaultDocumentGenerationStrategy):
             "strategy_type": self.strategy_type.value,
         }
 
+class FixedDocumentStrategy(DocumentGenerationStrategy):
+    """고정된 문서 생성 전략
     
+    고정된 문서 파일을 return하는 경우에 사용합니다.
+    """
+    
+    def __init__(self, logger: logging.Logger, base_path: str = "app/resources/document"):
+        self.strategy_type = DocumentStrategyType.GENERATION
+        self.base_path = base_path
+        self.logger = logger
+    
+    def generate_document(self, data: Dict[str, Any], path = None, file_name = None) -> Dict[str, Any]:
+        """문서를 복사해와서 return"""
+        document_path = os.path.join( self.base_path,f"{data['document_type']}.pdf")
+        self.logger.info("will return Fixed document path: %s", document_path)
+        if not os.path.exists(document_path):
+            raise DocumentAutomationError(f"Fixed document not found: {data['document_type']}")
+        # 임시 파일 경로 생성
+        if path is None and file_name is not None:
+            path = tempfile.mkdtemp()
+            output_path = os.path.join(path, file_name)
+            shutil.copy2(document_path, output_path)
+        elif file_name is None and path is not None:
+            file_name = f"{data['key']}_{data['document_type']}.pdf"
+            output_path = os.path.join(path, file_name)
+            shutil.copy2(document_path, output_path)
+        else:
+            path = tempfile.mkdtemp()
+            file_name = f"{data['key']}_{data['document_type']}.pdf"
+            output_path = os.path.join(path, file_name)
+            shutil.copy2(document_path, output_path)
+        return {
+            "document_id": str(uuid.uuid4()),
+            "document_type": data["document_type"],
+            "created_at": datetime.now().isoformat(),
+            "full_path": output_path,
+            "file_path": path,
+            "file_name": file_name,
+            "strategy_type": self.strategy_type.value
+        }
+
     
         
 

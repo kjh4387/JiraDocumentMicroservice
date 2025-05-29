@@ -1,6 +1,6 @@
 from typing import Dict, Any
 from app.source.core.interfaces import DocumentGenerationStrategy, DataEnricher, DocumentRenderer, PdfGenerator, JiraClient
-from app.source.application.services.document_strategies.document_strategies import DefaultDocumentGenerationStrategy, DownloadDocumentStrategy, PictureAttatchedDocumentStrategy
+from app.source.application.services.document_strategies.document_strategies import DefaultDocumentGenerationStrategy, DownloadDocumentStrategy, PictureAttatchedDocumentStrategy, FixedDocumentStrategy
 import logging
 
 class DocumentStrategyFactory:
@@ -26,12 +26,16 @@ class DocumentStrategyFactory:
             "통장사본",
             "견적서",
             "거래명세서",
-            "여비규정"
         }
 
         # 특정 필드 첨부파일 다운로드 후 파일 내에 첨부가 필요한 문서 타입 목록
         self.field_attached_document_types = {
             "출장정산신청서"
+        }
+
+        # 고정된 문서를 리턴하는 문서 타입 목록
+        self.fixed_document_types = {
+            "여비규정"
         }
         
         # 전략 매핑 초기화
@@ -64,8 +68,15 @@ class DocumentStrategyFactory:
             for document_type in self.field_attached_document_types
         }
 
+        fixed_map = {
+            document_type: (lambda document_type=document_type: FixedDocumentStrategy(
+                self.logger
+            ))
+            for document_type in self.fixed_document_types
+        }
+
         # 3) 딕셔너리 병합
-        self.strategy_mapping: Dict[str, callable] = {**download_map, **picture_map}
+        self.strategy_mapping: Dict[str, callable] = {**download_map, **picture_map, **fixed_map}
 
         # 4) 기본(데이터만 받아 PDF 생성) 전략
         self.default_strategy = lambda: DefaultDocumentGenerationStrategy(
