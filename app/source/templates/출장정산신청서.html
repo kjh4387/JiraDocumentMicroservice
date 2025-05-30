@@ -8,38 +8,18 @@
         /* 프린트 관련 설정 */
         @page {
             size: A4;
-            margin: 0;
+            margin: auto; /* 페이지 여백 제거 */
         }
         
-        @media print {
-            html, body {
-                width: 210mm;
-                /* height: 297mm; */
-                margin: 0;
-                padding: 0;
-            }
-            .A4 {
-                margin: 0;
-                border: initial;
-                border-radius: initial;
-                width: initial;
-                min-height: initial;
-                box-shadow: initial;
-                background: initial;
-                page-break-after: always;
-            }
-        }
         
         /* 문서 규격 */
         .A4 {
-            display: flex;
-            flex-direction: column;
+            display: block;
             width: 210mm;
-            /* min-height: 297mm; */
-            margin: 0 auto;
             padding: 20mm;
             box-sizing: border-box;
             background: white;
+            break-after: page;        /* 신 문법 (WeasyPrint 52+ 권장) */
         }
     
         table {
@@ -54,6 +34,7 @@
             padding: 5px;
             text-align: center;
             height: 10px;
+            
         }
     
         .head {
@@ -95,14 +76,12 @@
             height: auto;
             z-index: 1;        /* 텍스트 위로 */
         }
-        .page-break {
-            page-break-after: always;
-        }
+        
     </style>
 </head>
 <body>
+    {% for participant in 출장_참석자 %}
     <div class="A4">
-        {% for participant in 출장_참석자 %}
         <div style="height: 400mm;">
             <!-- 제목 영역 -->
             <div class="head">
@@ -243,7 +222,7 @@
                 </table>
             </div>
         </div>
-        {% endfor %}
     </div>
+    {% endfor %}
 </body>
 </html>
