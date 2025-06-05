@@ -110,7 +110,7 @@ def load_config() -> Dict[str, Any]:
         "template_dir": os.path.join("app", "source", "templates"),
         "static_dir": os.path.abspath(os.path.join("app", "resources")),
         "output_dir": os.path.join("output/Paperworks/Paperworks/00. 연구비 증빙서류"),
-        "dir_name_format": "{research_project}/{parent_issue_subject}/{date}_{parent_issue_key}_{parent_issue_summary}",
+        "dir_name_format": "{research_project}/{parent_issue_subject}/{date}_{parent_issue_key}_{parent_title}",
         "file_name_format": "{summary}",
         "database": {
             "host": os.environ.get("DB_HOST", "db"),
@@ -202,6 +202,7 @@ def _get_document_path(issue_data: dict) -> str:
         parent_issue_subject=issue_data['fields']['parent']['fields']['issuetype']['name'],
         date=issue_data['fields']['증빙_일자'],
         parent_issue_key=issue_data['fields']['parent']['key'],
+        parent_title=issue_data['fields']['제목'], #제목
         parent_issue_summary=issue_data['fields']['parent']['fields']['summary']
     )
     logger = container.logger
