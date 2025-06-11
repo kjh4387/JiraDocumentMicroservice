@@ -185,7 +185,7 @@ def sanitize_folder_name(name: str) -> str:
         str: 안전한 폴더명
     """
     # 윈도우/리눅스/맥에서 사용할 수 없는 문자들
-    invalid_chars = r'[<>:"/\\|?*\x00-\x1f]'
+    invalid_chars = r'[<>:"/\\|?*]'
     for char in invalid_chars:
         name = name.replace(char, '_')
     # 연속된 언더스코어를 하나로 통합
@@ -199,11 +199,11 @@ def _get_document_path(issue_data: dict) -> str:
     # config의 dir_name_format을 사용하여 디렉토리 경로 생성
     dir_path = container.config['dir_name_format'].format(
         research_project=f"({issue_data['fields']['연구과제_선택_key']['project_code']}){sanitize_folder_name(issue_data['fields']['연구과제_선택_key']['project_name'])}",
-        parent_issue_subject=issue_data['fields']['parent']['fields']['issuetype']['name'],
-        date=issue_data['fields']['증빙_일자'],
-        parent_issue_key=issue_data['fields']['parent']['key'],
-        parent_title=issue_data['fields']['제목'], #제목
-        parent_issue_summary=issue_data['fields']['parent']['fields']['summary']
+        parent_issue_subject=sanitize_folder_name(issue_data['fields']['parent']['fields']['issuetype']['name']),
+        date=sanitize_folder_name(issue_data['fields']['증빙_일자']),
+        parent_issue_key=sanitize_folder_name(issue_data['fields']['parent']['key']),
+        parent_title=sanitize_folder_name(issue_data['fields']['제목']), #제목
+        parent_issue_summary=sanitize_folder_name(issue_data['fields']['parent']['fields']['summary'])
     )
     logger = container.logger
     logger.debug(f"dir_path: {dir_path}")
@@ -213,7 +213,7 @@ def _get_document_name(issue_data: dict, extension: str = "pdf") -> str:
     """문서 이름 결정"""
 
     name = container.config['file_name_format'].format(
-        summary=issue_data['fields']['summary']
+        summary=sanitize_folder_name(issue_data['fields']['summary'])
     )
     logger = container.logger
     logger.debug(f"name: {name}")
