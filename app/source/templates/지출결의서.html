@@ -121,7 +121,7 @@
                 </tr>
             </table>
         </div>
-
+        int total = 0;
         <!-- 지출 항목 테이블 -->
         <div class="table">
             <table>
@@ -136,10 +136,11 @@
                     <td>{{ 금액 }}</td>
                     <td>{{ 비고 }}</td>
                 </tr>
+                total += 금액
                 {% endfor %}
                 <tr>
                     <td>합계</td>
-                    <td colspan="2">{{  }}</td>
+                    <td colspan="2">{{ total|format_number }} 원</td>
                 </tr>
             </table>
         </div>
@@ -148,7 +149,7 @@
             <div class="footer-content" style="text-align: right;">
                 <h3>위 금액을 영수(청구)합니다.</h3>
                 <h3>작성일: {{ 증빙_일자 }}</h3>
-                <h3>신청인) 소속: 메테오 시뮬레이션 &ensp; 성명: {{ assignee.name }} <img src="{{ assignee.stamp }}" class="signature-image" alt="서명">
+                <h3>신청인) 소속: 메테오 시뮬레이션 &ensp; 성명: {{ 서명인.name }} <img src="{{ 서명인.stamp }}" class="signature-image" alt="서명">
                     (인 또는 서명)</h3>
             </div>
         </div>
