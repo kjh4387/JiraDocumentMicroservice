@@ -132,11 +132,11 @@
                 </tr>
                 {% for item in expense_list %}
                 <tr>
-                    <td>{{ 항목 }}</td>
-                    <td>{{ 금액 }}</td>
-                    <td>{{ 비고 }}</td>
+                    <td>{{ item.항목 }}</td>
+                    <td>{{ item.금액 }}</td>
+                    <td>{{ item.비고 }}</td>
                 </tr>
-                total += 금액
+                {% set total = total + item.금액 %}
                 {% endfor %}
                 <tr>
                     <td>합계</td>
