@@ -10,7 +10,7 @@ services:
     volumes:
       - .:/workspace
     environment:
-      - ENV:development
+      - ENV=development
       - JIRA_BASE_URL=https://msimul.atlassian.net
       - JIRA_USERNAME=juwon@msimul.com
       - JIRA_API_TOKEN=ATATT3xFfGF06CSBKdkFDyj5YLGYHirFjoglCVtvLCia7XxTR57nYY-wj1rxkTVsa3Gpgd7fZ4pqcKIPdR7g9RJR9lpmkDXZA1D1eWKb-EceAayOpapM-wBn3NCg6KifTFEJqo5DsYGdMOFYl0Kg9j1TF0B1EFwA-VRZcGB0UFd94Cp03lO7IzE=68E2873A
@@ -28,7 +28,8 @@ services:
       - POSTGRES_PASSWORD=mypassword
       - POSTGRES_DB=mydb
     volumes:
-      - ./dbdata:/var/lib/postgresql/data
+      - dbdata:/var/lib/postgresql/data
+     
     ports:
       - "5432:5432"
   
@@ -55,4 +56,5 @@ services:
     volumes:
       - ./app:/workspace/app
       - ./output:/workspace/output
-  
+volumes:
+  dbdata: {}    
